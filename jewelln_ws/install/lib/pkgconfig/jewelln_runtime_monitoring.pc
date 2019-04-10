@@ -1,0 +1,8 @@
+prefix=/home/nathan/f1-10-ROS/jewelln_ws/install
+
+Name: jewelln_runtime_monitoring
+Description: Description of jewelln_runtime_monitoring
+Version: 0.0.0
+Cflags: 
+Libs: -L/home/nathan/f1-10-ROS/jewelln_ws/install/lib 
+Requires: message_runtime

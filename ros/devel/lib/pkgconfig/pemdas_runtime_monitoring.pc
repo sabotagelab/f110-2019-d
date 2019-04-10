@@ -1,0 +1,8 @@
+prefix=/home/nathan/f1-autonomous/ros/devel
+
+Name: pemdas_runtime_monitoring
+Description: Description of pemdas_runtime_monitoring
+Version: 0.0.0
+Cflags: 
+Libs: -L/home/nathan/f1-autonomous/ros/devel/lib 
+Requires: message_runtime vesc_msgs

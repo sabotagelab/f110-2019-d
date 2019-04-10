@@ -1,0 +1,8 @@
+prefix=/home/nathan/f1-autonomous/ros/devel
+
+Name: vesc_ackermann
+Description: Description of vesc_ackermann
+Version: 0.0.1
+Cflags: -I/home/nathan/f1-autonomous/ros/src/vesc/vesc_ackermann/include
+Libs: -L/home/nathan/f1-autonomous/ros/devel/lib 
+Requires: nodelet pluginlib roscpp nav_msgs std_msgs geometry_msgs tf ackermann_msgs vesc_msgs

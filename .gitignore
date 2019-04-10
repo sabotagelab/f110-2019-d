@@ -30,3 +30,7 @@
 *.exe
 *.out
 *.app
+
+# ROS
+ros/build/*
+jewelln_ws/build/*
