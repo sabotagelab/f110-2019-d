@@ -34,3 +34,5 @@
 # ROS
 ros/build/*
 jewelln_ws/build/*
+*/build/*
+*/devel/*
