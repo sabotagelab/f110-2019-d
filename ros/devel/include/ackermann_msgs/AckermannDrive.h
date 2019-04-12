@@ -91,7 +91,7 @@ namespace message_traits
 
 
 // BOOLTRAITS {'IsFixedSize': True, 'IsMessage': True, 'HasHeader': False}
-// {'std_msgs': ['/opt/ros/melodic/share/std_msgs/cmake/../msg'], 'ackermann_msgs': ['/home/nathan/f1-autonomous/ros/src/ackermann_msgs/msg']}
+// {'std_msgs': ['/opt/ros/kinetic/share/std_msgs/cmake/../msg'], 'ackermann_msgs': ['/home/nathan/pemdas/ros/src/system/ackermann_msgs/msg']}
 
 // !!!!!!!!!!! ['__class__', '__delattr__', '__dict__', '__doc__', '__eq__', '__format__', '__getattribute__', '__hash__', '__init__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__', '__weakref__', '_parsed_fields', 'constants', 'fields', 'full_name', 'has_header', 'header_present', 'names', 'package', 'parsed_fields', 'short_name', 'text', 'types']
 
@@ -158,45 +158,45 @@ struct Definition< ::ackermann_msgs::AckermannDrive_<ContainerAllocator> >
 {
   static const char* value()
   {
-    return "## Driving command for a car-like vehicle using Ackermann steering.\n"
-"#  $Id$\n"
-"\n"
-"# Assumes Ackermann front-wheel steering. The left and right front\n"
-"# wheels are generally at different angles. To simplify, the commanded\n"
-"# angle corresponds to the yaw of a virtual wheel located at the\n"
-"# center of the front axle, like on a tricycle.  Positive yaw is to\n"
-"# the left. (This is *not* the angle of the steering wheel inside the\n"
-"# passenger compartment.)\n"
-"#\n"
-"# Zero steering angle velocity means change the steering angle as\n"
-"# quickly as possible. Positive velocity indicates a desired absolute\n"
-"# rate of change either left or right. The controller tries not to\n"
-"# exceed this limit in either direction, but sometimes it might.\n"
-"#\n"
-"float32 steering_angle          # desired virtual angle (radians)\n"
-"float32 steering_angle_velocity # desired rate of change (radians/s)\n"
-"\n"
-"# Drive at requested speed, acceleration and jerk (the 1st, 2nd and\n"
-"# 3rd derivatives of position). All are measured at the vehicle's\n"
-"# center of rotation, typically the center of the rear axle. The\n"
-"# controller tries not to exceed these limits in either direction, but\n"
-"# sometimes it might.\n"
-"#\n"
-"# Speed is the desired scalar magnitude of the velocity vector.\n"
-"# Direction is forward unless the sign is negative, indicating reverse.\n"
-"#\n"
-"# Zero acceleration means change speed as quickly as\n"
-"# possible. Positive acceleration indicates a desired absolute\n"
-"# magnitude; that includes deceleration.\n"
-"#\n"
-"# Zero jerk means change acceleration as quickly as possible. Positive\n"
-"# jerk indicates a desired absolute rate of acceleration change in\n"
-"# either direction (increasing or decreasing).\n"
-"#\n"
-"float32 speed                   # desired forward speed (m/s)\n"
-"float32 acceleration            # desired acceleration (m/s^2)\n"
-"float32 jerk                    # desired jerk (m/s^3)\n"
-;
+    return "## Driving command for a car-like vehicle using Ackermann steering.\n\
+#  $Id$\n\
+\n\
+# Assumes Ackermann front-wheel steering. The left and right front\n\
+# wheels are generally at different angles. To simplify, the commanded\n\
+# angle corresponds to the yaw of a virtual wheel located at the\n\
+# center of the front axle, like on a tricycle.  Positive yaw is to\n\
+# the left. (This is *not* the angle of the steering wheel inside the\n\
+# passenger compartment.)\n\
+#\n\
+# Zero steering angle velocity means change the steering angle as\n\
+# quickly as possible. Positive velocity indicates a desired absolute\n\
+# rate of change either left or right. The controller tries not to\n\
+# exceed this limit in either direction, but sometimes it might.\n\
+#\n\
+float32 steering_angle          # desired virtual angle (radians)\n\
+float32 steering_angle_velocity # desired rate of change (radians/s)\n\
+\n\
+# Drive at requested speed, acceleration and jerk (the 1st, 2nd and\n\
+# 3rd derivatives of position). All are measured at the vehicle's\n\
+# center of rotation, typically the center of the rear axle. The\n\
+# controller tries not to exceed these limits in either direction, but\n\
+# sometimes it might.\n\
+#\n\
+# Speed is the desired scalar magnitude of the velocity vector.\n\
+# Direction is forward unless the sign is negative, indicating reverse.\n\
+#\n\
+# Zero acceleration means change speed as quickly as\n\
+# possible. Positive acceleration indicates a desired absolute\n\
+# magnitude; that includes deceleration.\n\
+#\n\
+# Zero jerk means change acceleration as quickly as possible. Positive\n\
+# jerk indicates a desired absolute rate of acceleration change in\n\
+# either direction (increasing or decreasing).\n\
+#\n\
+float32 speed                   # desired forward speed (m/s)\n\
+float32 acceleration            # desired acceleration (m/s^2)\n\
+float32 jerk                    # desired jerk (m/s^3)\n\
+";
   }
 
   static const char* value(const ::ackermann_msgs::AckermannDrive_<ContainerAllocator>&) { return value(); }
