@@ -1,0 +1,12 @@
+background_b: 255
+background_g: 86
+background_r: 150
+rosdistro: 'kinetic
+
+  '
+roslaunch:
+  uris: {host_shrey_virtualbox__45869: 'http://shrey-VirtualBox:45869/'}
+rosversion: '1.12.14
+
+  '
+run_id: a67d883e-5caa-11e9-8514-080027b56cf1
