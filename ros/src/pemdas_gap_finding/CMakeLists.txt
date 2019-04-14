@@ -8,17 +8,14 @@ project(pemdas_gap_finding)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  ackermann_msgs
-  geometry_msgs
   roscpp
   rospy
+  geometry_msgs
+  ackermann_msgs
   sensor_msgs
   std_msgs
+  message_generation
 )
-
-## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
-
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -50,11 +47,11 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+  FILES
+  Gap.msg
+  Gaps.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -76,7 +73,7 @@ find_package(catkin REQUIRED COMPONENTS
 #   ackermann_msgs
    geometry_msgs
 #   sensor_msgs
-#   std_msgs
+   std_msgs
  )
 
 ################################################
@@ -111,7 +108,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES pemdas_gap_finding
-#  CATKIN_DEPENDS ackermann_msgs geometry_msgs roscpp rospy sensor_msgs std_msgs
+  CATKIN_DEPENDS ackermann_msgs geometry_msgs roscpp rospy sensor_msgs std_msgs message_runtime
 #  DEPENDS system_lib
 )
 
