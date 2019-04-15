@@ -8,7 +8,7 @@ from pemdas_gap_finding.msg import Gaps
 #publish all gaps to lidar_gaps
 #publish best point to gap_center
 
-class interface:
+class Interface:
     def __init__(self, rate=10):
         rospy.init_node('pemdas_gap_finding')
 
@@ -19,9 +19,7 @@ class interface:
         
 
     def start(self):
-        while not rosy.is_shutdown():
-            rospy.spinonce()
-            self.rate.sleep()
+        rospy.spin()
 
 
     def callback(self, scanData):
@@ -31,6 +29,7 @@ class interface:
         centerPointMessage = makeCenterPointMessage(centerPoint)
         self.gapPub.publish(gapsMessage)
         self.pointPub.publish(centerPoint)
+        self.rate.sleep()
 	
 
 def findGaps(scanData):
