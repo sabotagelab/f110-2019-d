@@ -30,4 +30,4 @@ include_directories(
 
 add_executable(pemdas_average_vesc src/pemdas_average_vesc.cpp)
 target_link_libraries(pemdas_average_vesc ${catkin_LIBRARIES})
-
+add_dependencies(pemdas_average_vesc ${catkin_EXPORTED_TARGETS})
