@@ -32,12 +32,6 @@
 *.app
 
 # ROS
-ros/build/
-ros/devel/
-jewelln_ws/build
-jewelln_ws/devel
-amrita_ws/build
-amrita_ws/devel
-layng_ws/build
-layng_ws/devel
+*/build
+*/devel
 
