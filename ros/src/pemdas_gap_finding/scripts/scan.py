@@ -8,6 +8,7 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 #import seaborn as sns; sns.set()
+from pemdas_gap_finding.msg import Gap
 
 def callback(msg):
     #make a list to hold data with x = range, y = angle

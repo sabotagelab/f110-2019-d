@@ -200,6 +200,3 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
-
-add_executable(pemdas_gap_finding src/pemdas_gap_finding.cpp)
-target_link_libraries(pemdas_gap_finding ${catkin_LIBRARIES})

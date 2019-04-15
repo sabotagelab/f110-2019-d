@@ -1,9 +1,9 @@
-#!/usr/bin/ev python
+#!/usr/bin/env python
 
 import rospy
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Point
-from msg import Gaps
+from pemdas_gap_finding.msg import Gaps
 
 #publish all gaps to lidar_gaps
 #publish best point to gap_center
@@ -26,11 +26,11 @@ class interface:
 
     def callback(self, scanData):
         gaps = findGaps(scanData.data)
-	    gapsMessage = makeGapsMessage(gaps, scanData.data)
-	    centerPoint = chooseCenterPoint(gaps, scanData.data)
-	    centerPointMessage = makeCenterPointMessage(centerPoint)
-	    self.gapPub.publish(gapsMessage)
-	    self.pointPub.publish(centerPoint)
+        gapsMessage = makeGapsMessage(gaps, scanData.data)
+        centerPoint = chooseCenterPoint(gaps, scanData.data)
+        centerPointMessage = makeCenterPointMessage(centerPoint)
+        self.gapPub.publish(gapsMessage)
+        self.pointPub.publish(centerPoint)
 	
 
 def findGaps(scanData):
