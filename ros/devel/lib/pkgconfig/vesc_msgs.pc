@@ -1,8 +1,0 @@
-prefix=/home/nathan/pemdas/ros/devel
-
-Name: vesc_msgs
-Description: Description of vesc_msgs
-Version: 0.0.1
-Cflags: -I/home/nathan/pemdas/ros/devel/include
-Libs: -L/home/nathan/pemdas/ros/devel/lib 
-Requires: std_msgs message_runtime

@@ -1,8 +1,0 @@
-prefix=/home/nathan/pemdas/ros/devel
-
-Name: pemdas_runtime_monitoring
-Description: Description of pemdas_runtime_monitoring
-Version: 0.0.0
-Cflags: 
-Libs: -L/home/nathan/pemdas/ros/devel/lib 
-Requires: std_msgs vesc_msgs
