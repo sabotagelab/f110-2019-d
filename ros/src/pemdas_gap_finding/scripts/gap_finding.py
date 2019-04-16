@@ -61,7 +61,7 @@ def makeGapsMessage(gaps, linearDistances):
 
     n = 3
     gapGroup = lambda idx, sep : points[ (idx * sep) : (idx * sep) + sep ]
-    msg = [ Gap(*gapGroup(i, n), linearDistances[i]) for i in xrange(0, len(lidarPoints))]
+    msg = [ Gap(*gapGroup(i, n), linear_dist_sqr=linearDistances[i]) for i in xrange(0, len(lidarPoints))]
 
     return msg
 
