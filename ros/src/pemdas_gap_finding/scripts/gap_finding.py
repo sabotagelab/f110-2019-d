@@ -7,7 +7,7 @@ from tf2_msgs.msg import TFMessage
 from pemdas_gap_finding.msg import Gaps, Gap, LidarPoint
 import tf
 
-#from gap_finding_algorithms import findGaps, processGaps, globalizePoint
+from algorithms import findGaps, processGaps, globalizePoint
 
 #publish all gaps to lidar_gaps
 #publish best point to gap_center
@@ -48,13 +48,13 @@ class Interface:
         rospy.loginfo("Published Gapfinding Info")
         self.rate.sleep()
 
-def findGaps(scanData):
+#def findGaps(scanData):
     #k = findk(scanData)
     #return kmeans(scanData, k=k)
     # return structure - [ [ (range, angle), (..), (..) ], [...], [...], ...]
 
-def globalizePoint(center, trans, rot):
-    return [0, 0, 0]
+#def globalizePoint(center, trans, rot):
+#    return [0, 0, 0]
 
 def makeGapsMessage(gaps, linearDistances):
     lidarPoints = [LidarPoint(*point) for gap in gaps for point in gap]
