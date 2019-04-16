@@ -18,6 +18,7 @@ add_message_files(
   FILES
   Gap.msg
   Gaps.msg
+  LidarPoint.msg
 )
 
 ##catkin_python_setup()
