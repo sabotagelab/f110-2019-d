@@ -6,9 +6,10 @@ from sensor_msgs.msg import LaserScan
 from sklearn.cluster import KMeans
 import numpy as np
 import math
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 #import seaborn as sns; sns.set()
-from pemdas_gap_finding.msg import Gap
+
+#from pemdas_gap_finding.msg import Gap
 
 def findGaps(msg, k=3):
     #make a list to hold data with x = range, y = angle

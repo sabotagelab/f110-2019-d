@@ -7,7 +7,11 @@ from tf2_msgs.msg import TFMessage
 from pemdas_gap_finding.msg import Gaps, Gap, LidarPoint
 import tf
 
+import sys
+sys.path.insert(0, "../src/algorithms/")
 from algorithms import findGaps, processGaps, globalizePoint
+
+#from scan import findGaps
 
 #publish all gaps to lidar_gaps
 #publish best point to gap_center
@@ -17,12 +21,13 @@ class Interface:
         rospy.init_node('pemdas_gap_finding')
 
         self.sub = rospy.Subscriber("/scan", LaserScan, self.callback)
-        self.tfListener = tf.TransformListener()
 
-        self.gapPub = rospy.Publisher("/lidar_gaps", Gaps, queue_size=10)
+        self.gapPub = rospy.Publisher("/lidar_gaps", Gaps, queue_size=100)
         self.pointPub = rospy.Publisher("/center_point", Point, queue_size=100)
 
         self.rate = rospy.Rate(rate)
+
+        self.tfListener = tf.TransformListener()
         
 
     def start(self):
@@ -30,6 +35,7 @@ class Interface:
 
 
     def callback(self, scanData):
+        rospy.loginfo("Recieved Scan Data")
         gaps = findGaps(scanData)
         linearDistances, centerGap = processGaps(gaps, scanData)
 
