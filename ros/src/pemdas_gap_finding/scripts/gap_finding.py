@@ -3,7 +3,11 @@
 import rospy
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Point
-from pemdas_gap_finding.msg import Gaps, Gap
+from tf2_msgs.msg import TFMessage
+from pemdas_gap_finding.msg import Gaps, Gap, LidarPoint
+import tf
+
+#from gap_finding_algorithms import findGaps, processGaps, globalizePoint
 
 #publish all gaps to lidar_gaps
 #publish best point to gap_center
@@ -13,8 +17,11 @@ class Interface:
         rospy.init_node('pemdas_gap_finding')
 
         self.sub = rospy.Subscriber("/scan", LaserScan, self.callback)
+        self.tfListener = tf.TransformListener()
+
         self.gapPub = rospy.Publisher("/lidar_gaps", Gaps, queue_size=10)
         self.pointPub = rospy.Publisher("/center_point", Point, queue_size=100)
+
         self.rate = rospy.Rate(rate)
         
 
@@ -24,26 +31,39 @@ class Interface:
 
     def callback(self, scanData):
         gaps = findGaps(scanData)
-        gapsMessage = makeGapsMessage(gaps, scanData)
-        centerPoint = chooseCenterPoint(gaps, scanData)
-        centerPointMessage = makeCenterPointMessage(centerPoint)
+        linearDistances, centerGap = processGaps(gaps, scanData)
+
+        try:
+            transferQT = self.tfListener.lookupTransform('/laser', '/map', rospy.Time(0))
+            centerPoint = globalizePoint(centerGap[1], *transferQT)
+            centerPointMessage = makeCenterPointMessage(centerPoint)
+            self.pointPub.publish(centerPointMessage)
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+            rospy.logerror("Exception transforming centerpoint. Not publishing to /center_point")
+
+        gapsMessage = makeGapsMessage(gaps, linearDistances)
+
         self.gapPub.publish(gapsMessage)
-        self.pointPub.publish(centerPointMessage)
-        rospy.loginfo("Published Messages")
+
+        rospy.loginfo("Published Gapfinding Info")
         self.rate.sleep()
-	
 
 def findGaps(scanData):
-    msg = Gap([], 0, 60)
-    return [msg]
+    #k = findk(scanData)
+    #return kmeans(scanData, k=k)
+    # return structure - [ [ (range, angle), (..), (..) ], [...], [...], ...]
 
-def makeGapsMessage(gaps, scan):
-    msg = Gaps(gaps, scan.angle_increment)
+def globalizePoint(center, trans, rot):
+    return [0, 0, 0]
+
+def makeGapsMessage(gaps, linearDistances):
+    lidarPoints = [LidarPoint(*point) for gap in gaps for point in gap]
+
+    n = 3
+    gapGroup = lambda idx, sep : points[ (idx * sep) : (idx * sep) + sep ]
+    msg = [ Gap(*gapGroup(i, n), linearDistances[i]) for i in xrange(0, len(lidarPoints))]
+
     return msg
-
-#find center point in global coords from gaps
-def chooseCenterPoint(gaps, scan):
-	return (0, 0, 0)
 
 def makeCenterPointMessage(centerPoint):
     msg = Point(*centerPoint)

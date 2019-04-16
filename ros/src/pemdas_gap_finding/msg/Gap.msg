@@ -1,3 +1,2 @@
-float32[] ranges
-float32 angle_min
-float32 angle_max
+float32[] features
+float32 linear_dist_sqr
