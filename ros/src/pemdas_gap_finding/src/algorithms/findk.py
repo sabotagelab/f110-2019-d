@@ -28,7 +28,7 @@ def find_k(scan):
     mean = sum(ddscan) / len(ddscan)   # mean
     var  = sum(pow(x-mean,2) for x in ddscan) / len(ddscan)  # variance
     std  = math.sqrt(var)
-    thres = mean + z*std;
+    thres = mean + z*std
     hits = []
     last = 0
     for i in range(len(ddscan)):
@@ -41,11 +41,11 @@ def find_k(scan):
     
     return k
 
-def find_k_np(scan, z=2):
+def find_k_np(scan, z=2, coe=1.1):
     data = scan.ranges
     data = np.array(data)
-    data[np.isinf(data)] = 5
-    data[np.isnan(data)] = 5
+    data[np.isinf(data)] = scan.range_max * coe
+    data[np.isnan(data)] = scan.range_max * coe
 
     diffs = np.absolute(np.difference(data))
 
@@ -54,9 +54,10 @@ def find_k_np(scan, z=2):
     threshhold = mean + z * std
 
     hits = numpy.where(data > threshhold)
+    hitsShift = np.append(hits[1:], np.nan)
 
-    return len(hits) # / 2??
-
+    k = len(hits[hits != hitsShift])
+    return k
 
 def listener():
 
