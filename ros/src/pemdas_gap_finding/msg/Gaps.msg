@@ -1,2 +1,2 @@
 Gap[] gaps
-int32 angle_increment
+float32 angle_increment
