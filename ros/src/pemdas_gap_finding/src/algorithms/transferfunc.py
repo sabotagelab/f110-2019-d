@@ -2,9 +2,9 @@
 import rospy
 from scipy.spatial.transform import Rotation as R
 import numpy as np
-from geometry_msgs import Vector3
+from geometry_msgs.msg import Vector3
 
-def globalizedPoint (distAng,trans,rot):
+def globalizePoint (distAng,trans,rot):
 	r = R.from_quat(rot)
 	euler = r.as_euler('zyx', degrees=True).tolist()
 

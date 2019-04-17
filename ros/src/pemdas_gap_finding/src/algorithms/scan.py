@@ -49,6 +49,3 @@ def getData(msg):
 
 
 
-rospy.init_node('scan_values')
-sub = rospy.Subscriber('/scan', LaserScan, callback)
-rospy.spin()

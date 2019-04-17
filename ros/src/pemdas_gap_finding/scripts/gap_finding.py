@@ -3,12 +3,10 @@
 import rospy
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Point
-from tf2_msgs.msg import TFMessage
 from pemdas_gap_finding.msg import Gaps, Gap, LidarPoint
 import tf
 
 import sys
-sys.path.insert(0, "../src/algorithms/")
 from algorithms import findGaps, processGaps, globalizePoint
 
 #from scan import findGaps
