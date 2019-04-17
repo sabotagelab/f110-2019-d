@@ -6,15 +6,15 @@ from geometry_msgs.msg import Vector3
 
 def globalizePoint (distAng,trans,rot):
 	r = R.from_quat(rot)
-	euler = r.as_euler('zyx', degrees=True).tolist()
+	euler = r.as_euler('zyx', degrees=False).tolist()
 
 	dist = distAng[0]	#meters
-	ang = distAng[1]	#degrees
+	ang = distAng[1]	#radians
 
-	x = dist * np.sin(np.deg2rad(ang+euler[0])) + trans[0]
-	y = dist * np.cos(np.deg2rad(ang+euler[0])) + trans[0]
+	x = dist * np.sin(ang+euler[0]) + trans[0]
+	y = dist * np.cos(ang+euler[0]) + trans[1]
 
-	x += trans[0]	#final x position of marker
-	y += trans[1]	#final y position of marker
+		#final x position of marker
+		#final y position of marker
 	z = 0						#final z position of marker
 	return (x, y, z)
