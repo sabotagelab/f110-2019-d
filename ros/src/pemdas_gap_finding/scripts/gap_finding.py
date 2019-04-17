@@ -6,7 +6,8 @@ from geometry_msgs.msg import Point
 from pemdas_gap_finding.msg import Gaps, Gap, LidarPoint
 import tf
 
-import sys
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(sys.path[0]), 'src'))
 from algorithms import findGaps, processGaps, globalizePoint
 
 #from tf2_msgs.msg import TFMessage
