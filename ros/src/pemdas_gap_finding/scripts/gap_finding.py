@@ -5,10 +5,11 @@ from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import Point
 from pemdas_gap_finding.msg import Gaps, Gap, LidarPoint
 import tf
+import numpy as np
 
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(sys.path[0]), 'src'))
-from algorithms import findGaps, processGaps, globalizePoint
+from algorithms import findGaps, processGaps, globalizePoint, find_k, find_k_np
 
 #from tf2_msgs.msg import TFMessage
 
@@ -37,7 +38,12 @@ class Interface:
 
     def callback(self, scanData):
         rospy.loginfo("Recieved Scan Data")
-        gaps = findGaps(scanData)
+        kSeed = find_k(scanData)
+        #kSeedNP = find_k_np(scanData)
+        rospy.loginfo("Found k seed value: %i" % kSeed)
+        #if kSeed != kSeedNP:
+        #    rospy.logwarn("Mismatched np/nonp k value: %i" % kSeedNP)
+        gaps = findGaps(scanData, k=kSeed)
         linearDistances, centerGap = processGaps(gaps)
 
         try:
@@ -51,7 +57,7 @@ class Interface:
             rospy.logerr(e)
 
         gapsMessage = makeGapsMessage(gaps, linearDistances)
-        print(gapsMessage)
+
         self.gapPub.publish(gapsMessage)
 
         rospy.loginfo("Published Gapfinding Info")
@@ -59,7 +65,7 @@ class Interface:
 
 def fixAngle(gap, scanData):
     angleRangeHalf = (scanData.angle_max - scanData.angle_min) / 2
-    center = (gap[1][0], gap[1][1] - angleRangeHalf)
+    center = (gap[1][0], gap[1][1] + angleRangeHalf)
     return center
 
 def makeGapsMessage(gaps, linearDistances):

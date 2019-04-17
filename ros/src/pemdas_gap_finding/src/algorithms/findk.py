@@ -13,8 +13,11 @@ def callback(data):
 
 def find_k(scan):
     #Set inf and nan values to a value greater than the furthest scan
-    scan = [4.1 if math.isnan(x) else x for x in scan]
-    scan = [4.1 if math.isinf(x) else x for x in scan]
+    scanData = scan
+    scan = scan.ranges
+    coe = 1.2
+    scan = [(scanData.range_max * coe) if math.isnan(x) else x for x in scan]
+    scan = [(scanData.range_max * coe) if math.isinf(x) else x for x in scan]
     k = 1
     dscan = []
     ddscan = []
@@ -35,7 +38,6 @@ def find_k(scan):
         if (ddscan[i] > thres):
             hits.append(i)
             if i-last>1:
-                print "Good"
                 k = k+1
             last = i
     
@@ -47,16 +49,17 @@ def find_k_np(scan, z=2, coe=1.1):
     data[np.isinf(data)] = scan.range_max * coe
     data[np.isnan(data)] = scan.range_max * coe
 
-    diffs = np.absolute(np.difference(data))
+    diffs = np.absolute(np.diff(data))
 
     mean = np.mean(data)
     std = np.std(data)
     threshhold = mean + z * std
 
-    hits = numpy.where(data > threshhold)
+    hits = np.where(data > threshhold)
     hitsShift = np.append(hits[1:], np.nan)
 
-    k = len(hits[hits != hitsShift])
+    ki = hits[hits != hitsShift]
+    k = len(ki)
     return k
 
 def listener():
