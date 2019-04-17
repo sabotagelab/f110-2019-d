@@ -35,7 +35,7 @@ class Interface:
     def callback(self, scanData):
         rospy.loginfo("Recieved Scan Data")
         gaps = findGaps(scanData)
-        linearDistances, centerGap = processGaps(gaps, scanData)
+        linearDistances, centerGap = processGaps(gaps)
 
         try:
             transferQT = self.tfListener.lookupTransform('/laser', '/map', rospy.Time(0))
@@ -46,7 +46,7 @@ class Interface:
             rospy.logerror("Exception transforming centerpoint. Not publishing to /center_point")
 
         gapsMessage = makeGapsMessage(gaps, linearDistances)
-
+        print(gapsMessage)
         self.gapPub.publish(gapsMessage)
 
         rospy.loginfo("Published Gapfinding Info")
@@ -61,11 +61,12 @@ class Interface:
 #    return [0, 0, 0]
 
 def makeGapsMessage(gaps, linearDistances):
+    rospy.loginfo(linearDistances)
     lidarPoints = [LidarPoint(*point) for gap in gaps for point in gap]
 
     n = 3
-    gapGroup = lambda idx, sep : points[ (idx * sep) : (idx * sep) + sep ]
-    msg = [ Gap(*gapGroup(i, n), linear_dist_sqr=linearDistances[i]) for i in xrange(0, len(lidarPoints))]
+    gapGroup = lambda idx, sep : lidarPoints[ (idx * sep) : (idx * sep) + sep ]
+    msg = [ Gap(linearDistances[i], gapGroup(i, n)) for i in xrange(0, len(gaps))]
 
     return msg
 

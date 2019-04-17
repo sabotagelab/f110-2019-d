@@ -19,6 +19,6 @@ def processGap(gap):
 
     totalAngle = gap[2][1] - gap[0][1]
 
-    a2 = np.sqr(gap[0][0]) + np.sqr(gap[2][0]) - 2 * gap[0][0] * gap[2][0] * np.cos(totalAngle)
+    a2 = np.power(gap[0][0], 2) + np.power(gap[2][0], 2) - (2 * gap[0][0] * gap[2][0] * np.cos(totalAngle))
 
     return a2

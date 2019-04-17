@@ -11,10 +11,10 @@ def globalizePoint (distAng,trans,rot):
 	dist = distAng[0]	#meters
 	ang = distAng[1]	#degrees
 
-	marker[0] = dist * np.sin(np.deg2rad(ang+euler[0]))
-	marker[1] = dist * np.cos(np.deg2rad(ang+euler[0]))
+	x = dist * np.sin(np.deg2rad(ang+euler[0])) + trans[0]
+	y = dist * np.cos(np.deg2rad(ang+euler[0])) + trans[0]
 
-	marker[0] = marker[0] + trans[0]	#final x position of marker
-	marker[1] = marker[1] + trans[1]	#final y position of marker
-	marker[2] = 0						#final z position of marker
-	return marker
+	x += trans[0]	#final x position of marker
+	y += trans[1]	#final y position of marker
+	z = 0						#final z position of marker
+	return (x, y, z)
