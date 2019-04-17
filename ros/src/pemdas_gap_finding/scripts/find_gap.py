@@ -41,13 +41,12 @@ class Interface:
         kSeed = find_k(scanData)
         #kSeedNP = find_k_np(scanData)
         rospy.loginfo("Found k seed value: %i" % kSeed)
-        #if kSeed != kSeedNP:
-        #    rospy.logwarn("Mismatched np/nonp k value: %i" % kSeedNP)
+        #rospy.loginfo("Found np k seed value: %i" % kSeedNP)
         gaps = findGaps(scanData, k=kSeed)
         linearDistances, centerGap = processGaps(gaps)
 
         try:
-            transferQT = self.tfListener.lookupTransform('/laser', '/map', rospy.Time(0))
+            transferQT = self.tfListener.lookupTransform('/map', '/laser', rospy.Time(0))
             centerPoint = fixAngle(centerGap, scanData)
             centerPoint = globalizePoint(centerPoint, *transferQT)
             centerPointMessage = makeCenterPointMessage(centerPoint)
@@ -65,7 +64,7 @@ class Interface:
 
 def fixAngle(gap, scanData):
     angleRangeHalf = (scanData.angle_max - scanData.angle_min) / 2
-    center = (gap[1][0], gap[1][1] + angleRangeHalf)
+    center = (gap[1][0] * .25, gap[1][1] + angleRangeHalf + 3.14)
     return center
 
 def makeGapsMessage(gaps, linearDistances):

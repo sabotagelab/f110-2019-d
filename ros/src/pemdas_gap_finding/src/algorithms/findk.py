@@ -56,11 +56,9 @@ def find_k_np(scan, z=2, coe=1.1):
     threshhold = mean + z * std
 
     hits = np.where(data > threshhold)
-    hitsShift = np.append(hits[1:], np.nan)
 
-    ki = hits[hits != hitsShift]
-    k = len(ki)
-    return k
+    kdiff = np.where(np.diff(hits) > 1)
+    return len(kdiff)
 
 def listener():
 
