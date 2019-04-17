@@ -44,6 +44,7 @@ def getData(msg):
     data = np.array(data)
     #replace inf values in data with a value just above max range
     data[np.isinf(data)] = msg.range_max * 1.02
+    data[np.isnan(data)] = msg.range_max * 1.02
     #data = np.nan_to_num(data)
     return(data)
 

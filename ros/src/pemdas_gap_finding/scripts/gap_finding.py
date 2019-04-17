@@ -9,7 +9,7 @@ import tf
 import sys
 from algorithms import findGaps, processGaps, globalizePoint
 
-#from scan import findGaps
+#from tf2_msgs.msg import TFMessage
 
 #publish all gaps to lidar_gaps
 #publish best point to gap_center
@@ -19,6 +19,8 @@ class Interface:
         rospy.init_node('pemdas_gap_finding')
 
         self.sub = rospy.Subscriber("/scan", LaserScan, self.callback)
+        #self.subTF = rospy.Subscriber("/tf", TFMessage, self.storeTF)
+        #self.subTF_static = rospy.Subscriber("/tf_static", TFMessage, self.storeTF)
 
         self.gapPub = rospy.Publisher("/lidar_gaps", Gaps, queue_size=100)
         self.pointPub = rospy.Publisher("/center_point", Point, queue_size=100)
@@ -42,8 +44,9 @@ class Interface:
             centerPoint = globalizePoint(centerGap[1], *transferQT)
             centerPointMessage = makeCenterPointMessage(centerPoint)
             self.pointPub.publish(centerPointMessage)
-        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-            rospy.logerror("Exception transforming centerpoint. Not publishing to /center_point")
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
+            rospy.logerr("Exception transforming centerpoint. Will not publish to /center_point")
+            rospy.logerr(e)
 
         gapsMessage = makeGapsMessage(gaps, linearDistances)
         print(gapsMessage)
