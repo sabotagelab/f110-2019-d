@@ -24,7 +24,7 @@ class Interface:
         #self.subTF_static = rospy.Subscriber("/tf_static", TFMessage, self.storeTF)
 
         self.gapPub = rospy.Publisher("/lidar_gaps", Gaps, queue_size=100)
-        self.pointPub = rospy.Publisher("/center_point", Point, queue_size=100)
+        self.pointPub = rospy.Publisher("/gap_center", Point, queue_size=100)
 
         self.rate = rospy.Rate(rate)
 
@@ -42,7 +42,8 @@ class Interface:
 
         try:
             transferQT = self.tfListener.lookupTransform('/laser', '/map', rospy.Time(0))
-            centerPoint = globalizePoint(centerGap[1], *transferQT)
+            centerPoint = fixAngle(centerGap, scanData)
+            centerPoint = globalizePoint(centerPoint, *transferQT)
             centerPointMessage = makeCenterPointMessage(centerPoint)
             self.pointPub.publish(centerPointMessage)
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
@@ -56,13 +57,10 @@ class Interface:
         rospy.loginfo("Published Gapfinding Info")
         self.rate.sleep()
 
-#def findGaps(scanData):
-    #k = findk(scanData)
-    #return kmeans(scanData, k=k)
-    # return structure - [ [ (range, angle), (..), (..) ], [...], [...], ...]
-
-#def globalizePoint(center, trans, rot):
-#    return [0, 0, 0]
+def fixAngle(gap, scanData):
+    angleRangeHalf = (scanData.angle_max - scanData.angle_min) / 2
+    center = (gap[1][0], gap[1][1] - angleRangeHalf)
+    return center
 
 def makeGapsMessage(gaps, linearDistances):
     rospy.loginfo(linearDistances)
