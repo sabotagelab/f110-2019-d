@@ -11,10 +11,9 @@ import sys, os
 sys.path.append(os.path.join(os.path.dirname(sys.path[0]), 'src'))
 from algorithms import findGaps, processGaps, globalizePoint, find_k, find_k_np
 
-#from tf2_msgs.msg import TFMessage
-
-#publish all gaps to lidar_gaps
-#publish best point to gap_center
+PUBLISH_GAP_POINTS = True
+if PUBLISH_GAP_POINTS:
+    from pemdas_gap_finding.msg import PointArray
 
 class Interface:
     def __init__(self, rate=10):
@@ -26,6 +25,8 @@ class Interface:
 
         self.gapPub = rospy.Publisher("/lidar_gaps", Gaps, queue_size=100)
         self.pointPub = rospy.Publisher("/gap_center", Point, queue_size=100)
+        if PUBLISH_GAP_POINTS:
+            self.gapPointsPub = rospy.Publisher("/lidar_gap_points", PointArray, queue_size=5)
 
         self.rate = rospy.Rate(rate)
 
@@ -47,9 +48,18 @@ class Interface:
 
         try:
             transferQT = self.tfListener.lookupTransform('/map', '/laser', rospy.Time(0))
-            centerPoint = fixAngle(centerGap, scanData)
+
+            if PUBLISH_GAP_POINTS:
+                gapPoints = PointArray()
+                gapPoints.points = []
+                for gap in gaps:
+                    for point in gap:
+                        gapPoints.points.append(Point(*globalizePoint(fixAngle(point, scanData), *transferQT)))
+                self.gapPointsPub.publish(gapPoints)
+
+            centerPoint = fixAngle(centerGap[1], scanData)
             centerPoint = globalizePoint(centerPoint, *transferQT)
-            centerPointMessage = makeCenterPointMessage(centerPoint)
+            centerPointMessage = Point(*centerPoint)
             self.pointPub.publish(centerPointMessage)
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
             rospy.logerr("Exception transforming centerpoint. Will not publish to /center_point")
@@ -62,10 +72,10 @@ class Interface:
         rospy.loginfo("Published Gapfinding Info")
         self.rate.sleep()
 
-def fixAngle(gap, scanData):
+def fixAngle(point, scanData):
     angleRangeHalf = (scanData.angle_max - scanData.angle_min) / 2
     #center = (gap[1][0] * .25, gap[1][1] + angleRangeHalf + 3.14)
-    center = (gap[1][0] , -gap[1][1] + angleRangeHalf)
+    center = (point[0] , point[1] + angleRangeHalf)
 
     print('CENTER:',center)
     return center
@@ -80,17 +90,9 @@ def makeGapsMessage(gaps, linearDistances):
 
     return msg
 
-def makeCenterPointMessage(centerPoint):
-    msg = Point(*centerPoint)
-    return msg
-
 if __name__ == "__main__":
     try:
         iface = Interface(rate=5)
         iface.start()
     except rospy.ROSInterruptException:
         rospy.logerror("ROS Interrupt Exception")
-
-            
-
- 

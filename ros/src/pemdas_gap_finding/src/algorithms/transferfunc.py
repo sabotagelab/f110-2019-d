@@ -17,8 +17,8 @@ def globalizePoint (distAng,trans,rot):
 	#y = dist * np.sin(ang+euler[0]) + trans[1]
 	x = dist * np.cos(ang)
 	y = dist * np.sin(ang)
-	# x = dist * np.sin(ang)
-	# y = dist * np.cos(ang)
+	#x = dist * np.sin(ang)
+	#y = dist * np.cos(ang)
 	#print("Dist =",dist)
 	#print("np.cos(ang+euler) =",np.cos(ang+euler[0]))
 	print("GL Center is at:",x,y)

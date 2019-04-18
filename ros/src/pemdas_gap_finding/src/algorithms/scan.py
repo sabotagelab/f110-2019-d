@@ -38,7 +38,7 @@ def findGaps(msg, k=5):
 def getData(msg):
     data = []
     for i in range(len(msg.ranges)):
-        data.append([msg.ranges[i], (i*msg.angle_increment)])
+        data.append([msg.ranges[i], ((len(msg.ranges)-1-i)*msg.angle_increment)])
         #print(msg.ranges[i], (i*0.25))
 
     data = np.array(data)
