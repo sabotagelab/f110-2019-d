@@ -11,7 +11,7 @@ import math
 
 #from pemdas_gap_finding.msg import Gap
 
-def findGaps(msg, k=3):
+def findGaps(msg, k=5):
     #make a list to hold data with x = range, y = angle
     X = getData(msg)
     print('Running KMeans.....')

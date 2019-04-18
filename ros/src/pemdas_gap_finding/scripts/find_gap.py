@@ -64,7 +64,10 @@ class Interface:
 
 def fixAngle(gap, scanData):
     angleRangeHalf = (scanData.angle_max - scanData.angle_min) / 2
-    center = (gap[1][0] * .25, gap[1][1] + angleRangeHalf + 3.14)
+    #center = (gap[1][0] * .25, gap[1][1] + angleRangeHalf + 3.14)
+    center = (gap[1][0] , -gap[1][1] + angleRangeHalf)
+
+    print('CENTER:',center)
     return center
 
 def makeGapsMessage(gaps, linearDistances):
