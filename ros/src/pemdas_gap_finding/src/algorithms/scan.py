@@ -6,7 +6,7 @@ from sensor_msgs.msg import LaserScan
 from sklearn.cluster import KMeans
 import numpy as np
 import math
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 #import seaborn as sns; sns.set()
 
 #from pemdas_gap_finding.msg import Gap
@@ -14,23 +14,35 @@ import math
 def findGaps(msg, k=5):
     #make a list to hold data with x = range, y = angle
     X = getData(msg)
-    print('Running KMeans.....')
-    kmeans = KMeans(n_clusters = k, init='random').fit(X)
-    centers = kmeans.cluster_centers_
-    print('Centers found:')
-    print(centers)
+    # print('Running KMeans.....')
+    # kmeans = KMeans(n_clusters = k, init='random').fit(X)
+    # centers = kmeans.cluster_centers_
+    # print('Centers found:')
+    # print(centers)
+
     #y_kmeans = kmeans.predict(X)
     #plt.scatter(X[:, 0], X[:, 1], s=50)
     #plt.scatter(centers[:, 0], centers[:, 1], c='black', s=200, alpha=0.5)
     #plt.show()
 
     #print(X[np.where(kmeans.labels_ == 0)])
+    # gaps = []
+    # for i in range(k):
+    #     gaps.append([ X[np.where(dbscan.labels_ == i)][0, :].tolist(), centers[i].tolist(), X[np.where(dbscan.labels_ == i)][-1, :].tolist()])
 
-    #list structure
-    #[ [cluster0 min range, cluster avg, cluster0 max range] [...] ]
+
+    #DBSCAN
+    db = DBSCAN(eps = 0.01*msg.range_max, min_samples=3)
+    dbscan = db.fit(X)
+    y_pred = db.fit_predict(X)
+    # centers = dbscan.cluster_centers_
+    # print(centers)
+    plt.scatter(X[:, 0], X[:, 1], c=y_pred, cmap='Paired')
+    # plt.scatter(centers[:, 0], centers[:, 1], c='black', s=200, alpha=0.5)
+    plt.show()
     gaps = []
-    for i in range(k):
-        gaps.append([ X[np.where(kmeans.labels_ == i)][0, :].tolist(), centers[i].tolist(), X[np.where(kmeans.labels_ == i)][-1, :].tolist()])
+    for i in range(len(set(dbscan.labels_))):
+        gaps.append([ X[np.where(dbscan.labels_ == i)].tolist()])
 
     return(gaps)
 
@@ -47,6 +59,3 @@ def getData(msg):
     data[np.isnan(data)] = msg.range_max * 1.02
     #data = np.nan_to_num(data)
     return(data)
-
-
-
