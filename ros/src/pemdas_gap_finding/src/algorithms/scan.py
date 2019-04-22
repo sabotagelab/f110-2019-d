@@ -7,6 +7,7 @@ from sklearn.cluster import KMeans, DBSCAN
 import numpy as np
 import math
 import matplotlib.pyplot as plt
+from sklearn.preprocessing import StandardScalar
 #import seaborn as sns; sns.set()
 
 #from pemdas_gap_finding.msg import Gap
@@ -42,6 +43,7 @@ def dbscanFind(msg):
     # plt.scatter(centers[:, 0], centers[:, 1], c='black', s=200, alpha=0.5)
     #plt.show()
     X = getData(msg)
+    X = StandardScalar().fit_transform(X)
     db = DBSCAN(eps = 0.01*msg.range_max, min_samples=10)
     dbscan = db.fit(X)
     y_pred = db.fit_predict(X)
@@ -78,7 +80,7 @@ def gradientScan_np(scan, z=2, coe=1.1):
     hits = np.where(jerk > threshhold)[0] #where second gradient is > threshold
 
     spikes = hits[np.where(np.diff(hits) > 1)[0]].tolist()
-    spikes.append(len(scan.ranges)-1) 
+    spikes.append(len(scan.ranges)-1)
 
     gaps = []
     angles = [scan.angle_increment*i for i in xrange(len(scan.ranges), 0, -1)]
@@ -86,7 +88,7 @@ def gradientScan_np(scan, z=2, coe=1.1):
     for spike in spikes:
         gaps.append(zip(scan.ranges[lastSpike:spike], angles[lastSpike:spike]))
         lastSpike = spike
-    
+
     return gaps
 
 def gradientScan(data):
@@ -103,7 +105,7 @@ def gradientScan(data):
     for i in range(len(scan)-1):
         dscan.append(scan[i+1]-scan[i])
         if i > 0:
-            ddscan.append(abs(dscan[i]-dscan[i-1])) 
+            ddscan.append(abs(dscan[i]-dscan[i-1]))
     z = 2
     mean = sum(ddscan) / len(ddscan)   # mean
     var  = sum(pow(x-mean,2) for x in ddscan) / len(ddscan)  # variance
