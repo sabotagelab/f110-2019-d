@@ -43,23 +43,6 @@ def find_k(scan):
     
     return k
 
-def find_k_np(scan, z=2, coe=1.1):
-    data = scan.ranges
-    data = np.array(data)
-    data[np.isinf(data)] = scan.range_max * coe
-    data[np.isnan(data)] = scan.range_max * coe
-
-    diffs = np.absolute(np.diff(data))
-
-    mean = np.mean(data)
-    std = np.std(data)
-    threshhold = mean + z * std
-
-    hits = np.where(data > threshhold)
-
-    kdiff = np.where(np.diff(hits) > 1)
-    return len(kdiff)
-
 def listener():
 
     # In ROS, nodes are uniquely named. If two nodes with the same
