@@ -9,7 +9,7 @@ import numpy as np
 
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(sys.path[0]), 'src'))
-from algorithms import findGaps, processGaps, globalizePoint, find_k, gradientScan
+from algorithms import findGaps, processGaps, globalizePoint, find_k, gradientScan, gradientScan_np
 
 PUBLISH_GAP_POINTS = False
 if PUBLISH_GAP_POINTS:
@@ -43,7 +43,7 @@ class Interface:
         #kSeedNP = find_k_np(scanData)
         #rospy.loginfo("Found k seed value: %i" % kSeed)
         #rospy.loginfo("Found np k seed value: %i" % kSeedNP)
-        gaps = findGaps(scanData)#findGaps(scanData, k=kSeed)
+        gaps = gradientScan(scanData)#findGaps(scanData, k=kSeed)
         linearDistances, centerGap = processGaps(gaps)
 
         try:

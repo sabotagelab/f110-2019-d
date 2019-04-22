@@ -90,6 +90,7 @@ def gradientScan_np(scan, z=2, coe=1.1):
     return gaps
 
 def gradientScan(data):
+    from scipy.signal import savgol_filter
     #Set inf and nan values to a value greater than the furthest scan
     scan = savgol_filter(data.ranges,11,3)
     coe = 1.1
@@ -131,9 +132,14 @@ def gradientScan(data):
     feat.append(len(scan)-1)
 
     gaps = []
-    angles = [scan.angle_increment*i for i in xrange(len(scan.ranges), 0, -1)]
+    angles = [data.angle_increment*i for i in xrange(len(scan), 0, -1)]
+    print(len(angles))
+    print(len(scan))
+    print(feat)
     for idx in xrange(len(feat)):
-        gaps.append(zip(scan[feat[idx]:feat[idx+1]], angles[feat[idx]:feat[idx+1]]))
+        print(idx)
+        gap = zip(scan[feat[idx]:feat[idx+1]], angles[feat[idx]:feat[idx+1]])
+        gaps.append(gap)
     return gaps
 
     #bestGap = [0,0]
