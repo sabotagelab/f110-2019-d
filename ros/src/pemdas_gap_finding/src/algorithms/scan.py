@@ -1,13 +1,11 @@
 #! /usr/bin/env python
-
-
 import rospy
 from sensor_msgs.msg import LaserScan
 from sklearn.cluster import KMeans, DBSCAN
 import numpy as np
 import math
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import StandardScalar
+from sklearn.preprocessing import StandardScaler
 #import seaborn as sns; sns.set()
 
 #from pemdas_gap_finding.msg import Gap
@@ -43,7 +41,7 @@ def dbscanFind(msg):
     # plt.scatter(centers[:, 0], centers[:, 1], c='black', s=200, alpha=0.5)
     #plt.show()
     X = getData(msg)
-    X = StandardScalar().fit_transform(X)
+    X = StandardScaler().fit_transform(X)
     db = DBSCAN(eps = 0.01*msg.range_max, min_samples=10)
     dbscan = db.fit(X)
     y_pred = db.fit_predict(X)
@@ -67,7 +65,10 @@ def getData(msg):
     return(data)
 
 def gradientScan_np(scan, z=2, coe=1.1):
+    from scipy.signal import savgol_filter
+
     data = np.array(scan.ranges)
+    data = savgol_filter(scan.ranges, 11, 3)
     data[np.isinf(data)] = scan.range_max * coe
     data[np.isnan(data)] = scan.range_max * coe
 
@@ -79,14 +80,16 @@ def gradientScan_np(scan, z=2, coe=1.1):
 
     hits = np.where(jerk > threshhold)[0] #where second gradient is > threshold
 
-    spikes = hits[np.where(np.diff(hits) > 1)[0]].tolist()
+    innerClusterDiff = 1
+    icd = innerClusterDiff
+    spikes = hits[np.where(np.asarray([icd+1] + np.diff(hits).tolist()) > icd)[0]].tolist()
     spikes.append(len(scan.ranges)-1)
 
     gaps = []
-    angles = [scan.angle_increment*i for i in xrange(len(scan.ranges), 0, -1)]
+    angles = [scan.angle_increment*i for i in xrange(len(scan.ranges))]
     lastSpike = 0
     for spike in spikes:
-        gaps.append(zip(scan.ranges[lastSpike:spike], angles[lastSpike:spike]))
+        gaps.append(zip(data[lastSpike:spike], angles[lastSpike:spike]))
         lastSpike = spike
 
     return gaps
@@ -98,6 +101,7 @@ def gradientScan(data):
     coe = 1.1
     scan = [(data.range_max * coe) if math.isnan(x) else x for x in scan]
     scan = [(data.range_max * coe) if math.isinf(x) else x for x in scan]
+
     k = 1
     dscan = []
     ddscan = []
@@ -134,15 +138,10 @@ def gradientScan(data):
     feat.append(len(scan)-1)
 
     gaps = []
-    angles = [data.angle_increment*i for i in xrange(len(scan), 0, -1)]
-    print(len(angles))
-    print(len(scan))
-    print(feat)
-    for idx in xrange(len(feat)):
-        print(idx)
+    angles = [data.angle_increment*i for i in xrange(len(scan))]
+    for idx in xrange(len(feat)-1):
         gap = zip(scan[feat[idx]:feat[idx+1]], angles[feat[idx]:feat[idx+1]])
         gaps.append(gap)
-    return gaps
 
     #bestGap = [0,0]
     #for i in range(len(feat)-1):
@@ -152,4 +151,5 @@ def gradientScan(data):
             #ang = (round((feat[i+1]+feat[i])/2)*data.angle_increment)
             #ang -= (data.angle_max-data.angle_min)/2
             #bestGap = [dist , ang]
-    #return bestGap
+
+    return gaps

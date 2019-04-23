@@ -21,7 +21,7 @@ def globalizePoint (distAng,trans,rot):
 	#y = dist * np.cos(ang)
 	#print("Dist =",dist)
 	#print("np.cos(ang+euler) =",np.cos(ang+euler[0]))
-	print("GL Center is at:",x,y)
+	#print("GL Center is at:",x,y)
 		#final x position of marker
 		#final y position of marker
 	z = 0						#final z position of marker

@@ -3,9 +3,13 @@ import numpy as np
 
 def processGaps(gaps):
     #find linear distances
-
-    maxGap = max(gaps, key = lambda gap : np.mean(gap))
+    
+    carWidth = .3
+    minimumWidthRatio = 2
     linearDistances = list(map(processGap, gaps))
+    maxGap = max(gaps, key=lambda gap : np.average(gap))
+    #depths = np.array(map(lambda gap : np.average(gap), gaps))
+    #maxGap = max(depths[np.where(linearDistance > carWidth * minimumWidthRatio)])
 
     return linearDistances, maxGap
 

@@ -6,6 +6,8 @@ from geometry_msgs.msg import Point
 from pemdas_gap_finding.msg import Gaps, Gap, LidarPoint
 import tf
 import numpy as np
+from collections import deque
+import time
 
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(sys.path[0]), 'src'))
@@ -16,7 +18,7 @@ if PUBLISH_GAP_POINTS:
     from pemdas_gap_finding.msg import PointArray
 
 class Interface:
-    def __init__(self, rate=10):
+    def __init__(self, rate=10, window=10):
         rospy.init_node('pemdas_gap_finding')
 
         self.sub = rospy.Subscriber("/scan", LaserScan, self.callback)
@@ -31,7 +33,8 @@ class Interface:
         self.rate = rospy.Rate(rate)
 
         self.tfListener = tf.TransformListener()
-        
+
+        self.lidarWindow = deque(maxlen=window)
 
     def start(self):
         rospy.spin()
@@ -43,7 +46,23 @@ class Interface:
         #kSeedNP = find_k_np(scanData)
         #rospy.loginfo("Found k seed value: %i" % kSeed)
         #rospy.loginfo("Found np k seed value: %i" % kSeedNP)
-        gaps = gradientScan(scanData)#findGaps(scanData, k=kSeed)
+
+        #we only want to pop once the window is full
+        if not len(self.lidarWindow) < self.lidarWindow.maxlen:
+            self.lidarWindow.pop()
+        self.lidarWindow.appendleft(scanData.ranges)
+
+        #start = time.time()
+        gaps = gradientScan_np(scanData)
+        #time1 = time.time() - start
+
+        #start = time.time()
+        #gaps2 = gradientScan(scanData)
+        #time2 = time.time() - start
+
+        #ratio = time1 / time2
+        #print(ratio)
+
         linearDistances, centerGap = processGaps(gaps)
 
         try:
@@ -78,7 +97,6 @@ def fixAngle(point, scanData):
     #center = (gap[1][0] * .25, gap[1][1] + angleRangeHalf + 3.14)
     center = (point[0] , point[1] - angleRangeHalf)
 
-    print('CENTER:',center)
     return center
 
 #DEPRECATED - FOR USE WITH KMEANS
