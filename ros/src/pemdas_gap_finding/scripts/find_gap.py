@@ -11,7 +11,7 @@ import time
 
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(sys.path[0]), 'src'))
-from algorithms import findGaps, processGaps, globalizePoint, find_k, gradientScan, gradientScan_np
+from algorithms import processGaps, globalizePoint, gradientScan, gradientScan_np
 
 PUBLISH_GAP_POINTS = False
 if PUBLISH_GAP_POINTS:

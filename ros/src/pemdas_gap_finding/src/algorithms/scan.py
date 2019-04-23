@@ -1,16 +1,16 @@
 #! /usr/bin/env python
 import rospy
 from sensor_msgs.msg import LaserScan
-from sklearn.cluster import KMeans, DBSCAN
 import numpy as np
 import math
-import matplotlib.pyplot as plt
-from sklearn.preprocessing import StandardScaler
+#import matplotlib.pyplot as plt
 #import seaborn as sns; sns.set()
 
 #from pemdas_gap_finding.msg import Gap
 
 def findGaps(msg, k=5):
+    from sklearn.cluster import KMeans, DBSCAN
+    from sklearn.preprocessing import StandardScaler
     return dbscanFind(msg)
     #make a list to hold data with x = range, y = angle
 
