@@ -17,12 +17,27 @@ MAX_DISTANCE = 30.0
 MIN_ANGLE = -45.0
 MAX_ANGLE = 225.0
 
+#estimated delay from command to steady state
+CONTROL_DELAY_ESTIMATE = 0.5
+lookDistance = 0
+
+modeMap = {
+  "center" : followCenter,
+  "left" : followLeft,
+  "right" : followRight
+}
+
+#historical speed, updated continuosly
+lastSpeed = 0
+
 # data: single message from topic /scan
 # angle: between -45 to 225 degrees, where 0 degrees is directly to the right
 # Outputs length in meters to object with angle in lidar scan field of view
-def getRange(data, angle):
-  # TODO: implement
-  return 0.0
+def getRange(data, angle, degrees=False):
+  inc = data.angle_increment * (180/3.14 if degrees else 1)
+  index = int(angle / data.angle_increment)
+  index = np.clip([index], 0, len(data.ranges)-1)
+  return data.ranges[index]
 
 # data: single message from topic /scan
 # desired_distance: desired distance to the left wall [meters]
@@ -47,16 +62,22 @@ def followCenter(data):
 
 # Callback for receiving LIDAR data on the /scan topic.
 # data: the LIDAR data, published as a list of distances to the wall.
-def scan_callback(data):
-  error = 0.0 # TODO: replace with followLeft, followRight, or followCenter
+def scan_callback(data, mode="center"):
+
+  error = modeMap(data) 
 
   msg = Float64()
   msg.data = error
   pub.publish(msg)
 
+def estimateLookDistance(data):
+  lastSpeed = data
+  lookDistance = lastSpeed * 
+  
 # Boilerplate code to start this ROS node.
 # DO NOT MODIFY!
 if __name__ == '__main__':
 	rospy.init_node('pid_error_node', anonymous = True)
 	rospy.Subscriber("scan", LaserScan, scan_callback)
+  rospy.Subscriber("/vesc/speed", Float, storeSpeed)
 	rospy.spin()
