@@ -16,7 +16,16 @@ KD = 0.0
 N = 1
 K = .5
 weightFunc = lambda x : N*math.exp(-K*x)
-angleLimitFunc = lambda a : (a*math.exp(c*r) + b * math.exp(r*a))/(math.exp(c*r) + math.exp(r*a))
+
+SPD_DEC_ANGLE_PERIOD = np.deg2rad(10)
+SPD_DEC_ANGLE_MAX = np.deg2rad(20)
+MAX_VEL = 1.5 #m/s
+
+A = .5 #top of decrease
+B = 0 #bottom of decrease
+C = 8 #centerpoint of decrease
+R = 2 #steepness of decrease (negative values make increase)
+angleLimitFunc = lambda angle : (A*math.exp(C*R) + B * math.exp(R*angle))/(math.exp(C*R) + math.exp(R*angle))
 
 # Callback for receiving PID error data on the /pid_error topic
 # data: the PID error from pid_error_node, published as a Float64
@@ -53,7 +62,12 @@ class Interface:
 		return np.average(np.gradient(err), weights=self.weights)
 	
 	def angleMaxVelocity(self):
-		return np.average(np.asarray(self.angleWindow))
+		avgAngle = abs(np.average(np.asarray(self.angleWindow))) #sign does not matter since we are only determining speed
+		avgAngle = max(min(avgAngle, SPD_DEC_ANGLE_MAX), 0) #clamp angle between 0 and max angle
+		avgAngle = np.deg2rad(avgAngle)
+		angleStepDecrease = (avgAngle / SPD_DEC_ANGLE_PERIOD) * A
+		angleRemainderDecrease = angleLimitFunc(np.rad2deg(avgAngle % SPD_DEC_ANGLE_PERIOD))
+		return MAX_VEL - angleStepDecrease - angleRemainderDecrease
 
 	def control_callback(data):
 	# TODO: Based on the error (data.data), determine the car's required velocity
@@ -66,6 +80,7 @@ class Interface:
 		self.lastTime = currentTime
 
 		ut = KP * et + KI * self.etInt + KD * derivativeError()
+		self.storeAngle(ut)
 
 		msg = drive_param()
 		msg.angle = ut    # TODO: implement PID for steering angle
