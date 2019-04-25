@@ -24,8 +24,8 @@ class Interface:
         #self.subTF = rospy.Subscriber("/tf", TFMessage, self.storeTF)
         #self.subTF_static = rospy.Subscriber("/tf_static", TFMessage, self.storeTF)
 
-        self.gapPub = rospy.Publisher("/lidar_gaps", Gaps, queue_size=100)
-        self.pointPub = rospy.Publisher("/gap_center", Point, queue_size=100)
+        self.gapPub = rospy.Publisher("/lidar_gaps", Gaps, queue_size=1)
+        self.pointPub = rospy.Publisher("/gap_center", Point, queue_size=1)
         if PUBLISH_GAP_POINTS:
             self.gapPointsPub = rospy.Publisher("/lidar_gap_points", PointArray, queue_size=5)
 
@@ -77,7 +77,7 @@ class Interface:
         # self.gapPub.publish(gapsMessage)
 
         rospy.loginfo("Published Gapfinding Info")
-        self.rate.sleep()
+        # self.rate.sleep()
 
 def fixAngle(point, scanData):
     angleRangeHalf = (scanData.angle_max - scanData.angle_min) / 2
@@ -91,7 +91,7 @@ def polar2cart(best):
     x = best[0] * np.cos(best[1])
     y = best[0] * np.sin(best[1])
     z = 0
-    return (x,y,z)
+    return (x,y,z)  
 
 def findCenters(data):
     #Set inf and nan values to a value greater than the furthest scan
