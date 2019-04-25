@@ -58,8 +58,8 @@ def followLeft(data, desired_distance):
 # desired_distance: desired distance to the right wall [meters]
 # Outputs the PID error required to make the car follow the right wall.
 def followRight(data, desired_distance):
-  b = getRange(data, 0)
-  a = getRange(data, THETA)
+  b = getRange(data, 0, True)
+  a = getRange(data, THETA, True)
   #alpha is returned in radians
   alpha = math.atan((a*math.cos(math.radians(THETA)) - b)/(a*math.sin(math.radians(THETA))))
   d_t = b*math.cos(alpha)
