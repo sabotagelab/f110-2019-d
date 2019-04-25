@@ -21,7 +21,7 @@ THETA = 60
 
 #estimated delay from command to steady state
 CONTROL_DELAY_ESTIMATE = 0.5
-lookDistance = 0
+lookDistance = 2.5
 
 modeMap = {
   "center" : followCenter,
