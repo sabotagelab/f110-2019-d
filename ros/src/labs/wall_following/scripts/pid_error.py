@@ -8,18 +8,20 @@ import sys
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Float64
 import pdb
+from wall_following.msg import pid_angle_input
 
-pub = rospy.Publisher('pid_error', Float64, queue_size=10)
+pub = rospy.Publisher('pid_error', pid_angle_input, queue_size=10)
 
 # You can define constants in Python as uppercase global names like these.
 MIN_DISTANCE = 0.1
 MAX_DISTANCE = 30.0
 MIN_ANGLE = -45.0
 MAX_ANGLE = 225.0
+THETA = 60
 
 #estimated delay from command to steady state
 CONTROL_DELAY_ESTIMATE = 0.5
-lookDistance = 0
+lookDistance = 2.5
 
 modeMap = {
   "center" : followCenter,
@@ -35,7 +37,7 @@ lastSpeed = 0
 # Outputs length in meters to object with angle in lidar scan field of view
 def getRange(data, angle, degrees=False):
   inc = data.angle_increment * (180/3.14 if degrees else 1)
-  index = int(angle / data.angle_increment)
+  index = int(angle / inc)
   index = np.clip([index], 0, len(data.ranges)-1)
   return data.ranges[index]
 
@@ -43,15 +45,27 @@ def getRange(data, angle, degrees=False):
 # desired_distance: desired distance to the left wall [meters]
 # Outputs the PID error required to make the car follow the left wall.
 def followLeft(data, desired_distance):
-  # TODO: implement
-  return 0.0
+  b = getRange(data, 180, True)
+  a = getRange(data, 180-THETA, True)
+  #alpha is returned in radians
+  alpha = math.atan((a*math.cos(math.radians(180-THETA)) - b)/(a*math.sin(math.radians(180-THETA))))
+  d_t = b*math.cos(alpha)
+  d_tplus1 = d_t + lookDistance*math.sin(alpha)
+  error = desired_distance - d_tplus1
+  return error
 
 # data: single message from topic /scan
 # desired_distance: desired distance to the right wall [meters]
 # Outputs the PID error required to make the car follow the right wall.
 def followRight(data, desired_distance):
-  # TODO: implement
-  return 0.0
+  b = getRange(data, 0, True)
+  a = getRange(data, THETA, True)
+  #alpha is returned in radians
+  alpha = math.atan((a*math.cos(math.radians(THETA)) - b)/(a*math.sin(math.radians(THETA))))
+  d_t = b*math.cos(alpha)
+  d_tplus1 = d_t + lookDistance*math.sin(alpha)
+  error = desired_distance - d_tplus1
+  return error
 
 # data: single message from topic /scan
 # Outputs the PID error required to make the car drive in the middle
@@ -64,16 +78,17 @@ def followCenter(data):
 # data: the LIDAR data, published as a list of distances to the wall.
 def scan_callback(data, mode="center"):
 
-  error = modeMap(data) 
+  error = modeMap(data)
 
-  msg = Float64()
-  msg.data = error
+  msg = pid_angle_input()
+  msg.pid_error = error
+  msg.header = data.header
   pub.publish(msg)
 
 def estimateLookDistance(data):
   lastSpeed = data
-  lookDistance = lastSpeed * 
-  
+  lookDistance = lastSpeed *
+
 # Boilerplate code to start this ROS node.
 # DO NOT MODIFY!
 if __name__ == '__main__':
