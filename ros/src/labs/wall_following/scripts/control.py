@@ -72,7 +72,7 @@ class Interface:
 	def control_callback(data):
 	# TODO: Based on the error (data.data), determine the car's required velocity
 	# amd steering angle.
-		et = data.error
+		et = data.pid_error
 		storeError(et)
 
 		currentTime = float(data.header.nsecs) * pow(10, -9)
