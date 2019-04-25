@@ -45,34 +45,40 @@ def getRange(data, angle, degrees=False):
 # desired_distance: desired distance to the left wall [meters]
 # Outputs the PID error required to make the car follow the left wall.
 def followLeft(data, desired_distance):
-  b = getRange(data, 180, True)
-  a = getRange(data, 180-THETA, True)
-  #alpha is returned in radians
-  alpha = math.atan((a*math.cos(math.radians(180-THETA)) - b)/(a*math.sin(math.radians(180-THETA))))
-  d_t = b*math.cos(alpha)
-  d_tplus1 = d_t + lookDistance*math.sin(alpha)
-  error = desired_distance - d_tplus1
-  return error
+  return(follow(data, desired_distance, 180, True))
 
 # data: single message from topic /scan
 # desired_distance: desired distance to the right wall [meters]
 # Outputs the PID error required to make the car follow the right wall.
 def followRight(data, desired_distance):
-  b = getRange(data, 0, True)
-  a = getRange(data, THETA, True)
+  return(follow(data, desired_distance, 0, True))
   #alpha is returned in radians
-  alpha = math.atan((a*math.cos(math.radians(THETA)) - b)/(a*math.sin(math.radians(THETA))))
-  d_t = b*math.cos(alpha)
-  d_tplus1 = d_t + lookDistance*math.sin(alpha)
-  error = desired_distance - d_tplus1
-  return error
 
 # data: single message from topic /scan
 # Outputs the PID error required to make the car drive in the middle
 # of the hallway.
 def followCenter(data):
-  # TODO: implement
-  return 0.0
+  d_centre = abs(followRight(data, 0)+followLeft(data, 0))/2
+  b = getRange(data, 45, True)
+  a = getRange(data, 45+THETA, True)
+  #alpha is returned in radians
+  alpha = math.atan((a*math.cos(math.radians(THETA)) - b)/(a*math.sin(math.radians(THETA))))
+  d_t = b*math.cos(alpha)
+  d_t = d_centre - d_t
+  d_tplus1 = d_t + lookDistance*math.sin(alpha)
+  error = 0 - d_tplus1
+
+  return error
+
+def follow(data, desired_distance, angle, degrees=True):
+  b = getRange(data, 45+angle, degrees)
+  a = getRange(data, 45+abs(angle-THETA), degrees)
+  #alpha is returned in radians
+  alpha = math.atan((a*math.cos(math.radians(abs(angle-THETA))) - b)/(a*math.sin(math.radians(abs(angle-THETA)))))
+  d_t = b*math.cos(alpha)
+  d_tplus1 = d_t + lookDistance*math.sin(alpha)
+  error = desired_distance - d_tplus1
+  return error
 
 # Callback for receiving LIDAR data on the /scan topic.
 # data: the LIDAR data, published as a list of distances to the wall.
