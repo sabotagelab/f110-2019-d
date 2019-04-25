@@ -47,7 +47,7 @@ class Interface:
 		rospy.spin()
 
 	def storeQ(self, q, elem):
-		if not q.maxlen < len(q):
+		if not len(q) < q.maxlen
 			q.pop()
 		q.appendleft(elem)
 	

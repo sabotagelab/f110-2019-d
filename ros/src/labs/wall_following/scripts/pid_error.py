@@ -33,10 +33,10 @@ modeMap = {
 lastSpeed = 0
 
 # data: single message from topic /scan
-# angle: between -45 to 225 degrees, where 0 degrees is directly to the right
+# angle: between 0(far right) to 270 (far left) degrees, where 45 degrees is directly to the right
 # Outputs length in meters to object with angle in lidar scan field of view
 def getRange(data, angle, degrees=False):
-  inc = data.angle_increment * (180/3.14 if degrees else 1)
+  inc = data.angle_increment * (180/math.pi if degrees else 1)
   index = int(angle / inc)
   index = np.clip([index], 0, len(data.ranges)-1)
   return data.ranges[index]
@@ -45,13 +45,13 @@ def getRange(data, angle, degrees=False):
 # desired_distance: desired distance to the left wall [meters]
 # Outputs the PID error required to make the car follow the left wall.
 def followLeft(data, desired_distance):
-  return(follow(data, desired_distance, 180, True))
+  return follow(data, desired_distance, 180, True)
 
 # data: single message from topic /scan
 # desired_distance: desired distance to the right wall [meters]
 # Outputs the PID error required to make the car follow the right wall.
 def followRight(data, desired_distance):
-  return(follow(data, desired_distance, 0, True))
+  return follow(data, desired_distance, 0, True)
   #alpha is returned in radians
 
 # data: single message from topic /scan
