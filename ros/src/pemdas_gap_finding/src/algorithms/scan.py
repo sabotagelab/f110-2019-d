@@ -68,9 +68,31 @@ def gradientScan_np(scan, z=2, coe=1.1):
     from scipy.signal import savgol_filter
 
     data = np.array(scan.ranges)
-    data = savgol_filter(scan.ranges, 11, 3)
     data[np.isinf(data)] = scan.range_max * coe
-    data[np.isnan(data)] = scan.range_max * coe
+    #data[np.isnan(data)] = scan.range_max * coe
+
+    nanidx = np.where(np.isnan(data))
+    if len(nanidx):
+        nanchunks = []
+        last = None
+        size = 0
+        for ri in xrange(0, len(nanidx)):
+            if last == None:
+                last = nanidx[ri]
+                size = 1
+            else if nanidx[ri] - last != 1:
+                nanchunks.append((last, size))
+                last = None
+            else:
+                size += 1
+        nanchunks.append((last, size))
+    
+        idx = 0
+        for c in nanchunks:
+            data[nanidx[idx:idx+c[1]]] = np.nanmean(data[c[0], c[0]+c[1]])
+            idx += c[1]
+
+    data = savgol_filter(scan.ranges, 11, 3)
 
     jerk = np.absolute(np.diff(np.diff(data)))
 
