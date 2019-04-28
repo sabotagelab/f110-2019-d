@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 import rospy
-from scipy.spatial.transform import Rotation as R
+#from scipy.spatial.transform import Rotation as R
 import numpy as np
 from geometry_msgs.msg import Vector3
 
-def globalizePoint (distAng,trans,rot):
-	r = R.from_quat(rot)
-	euler = r.as_euler('zyx', degrees=False).tolist()
+def globalizePoint (distAng):
+	#r = R.from_quat(rot)
+	#euler = r.as_euler('zyx', degrees=False).tolist()
 	#print('car is at:', trans)
 	#print('car is rotated:',euler)
 	#print('center is at:',distAng)
