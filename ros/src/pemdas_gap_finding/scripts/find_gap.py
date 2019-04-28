@@ -66,7 +66,7 @@ class Interface:
         linearDistances, centerGap = processGaps(gaps)
 
         try:
-            transferQT = self.tfListener.lookupTransform('/map', '/laser', rospy.Time(0))
+            #transferQT = self.tfListener.lookupTransform('/map', '/laser', rospy.Time(0))
 
             if PUBLISH_GAP_POINTS:
                 features = lambda gap : [gap[0], gap[int(len(gap) / 2)], gap[-1]]
@@ -78,7 +78,7 @@ class Interface:
                 self.gapPointsPub.publish(gapPoints)
 
             centerPoint = fixAngle(centerGap[int(len(centerGap) / 2)], scanData)
-            centerPoint = globalizePoint(centerPoint, *transferQT)
+            centerPoint = globalizePoint(centerPoint)
             centerPointMessage = Point(*centerPoint)
             self.pointPub.publish(centerPointMessage)
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
