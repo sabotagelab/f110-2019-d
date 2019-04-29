@@ -11,7 +11,7 @@ import time
 
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(sys.path[0]), 'src'))
-from algorithms import processGaps, globalizePoint, gradientScan, gradientScan_np
+from algorithms import processGaps, globalizePoint, gradientScan_np, filterRanges
 
 PUBLISH_GAP_POINTS = False
 if PUBLISH_GAP_POINTS:
@@ -36,6 +36,10 @@ class Interface:
 
         self.lidarWindow = deque(maxlen=window)
 
+        makeProbability = lambda x : pow(10, -(window-x))
+        self.lidarHistoryGradient = np.asarray(list(map(makeProbability, range(0, window))))
+        print(self.lidarHistoryGradient)
+
     def start(self):
         rospy.spin()
 
@@ -48,20 +52,14 @@ class Interface:
         #rospy.loginfo("Found np k seed value: %i" % kSeedNP)
 
         #we only want to pop once the window is full
+        lidarData = filterRanges(scanData)
         if not len(self.lidarWindow) < self.lidarWindow.maxlen:
             self.lidarWindow.pop()
-        self.lidarWindow.appendleft(scanData.ranges)
+        self.lidarWindow.appendleft(lidarData)
+        #avgData = np.average(np.asarray(self.lidarWindow), weights=self.lidarHistoryGradient)
 
-        #start = time.time()
-        gaps = gradientScan_np(scanData)
-        #time1 = time.time() - start
 
-        #start = time.time()
-        #gaps2 = gradientScan(scanData)
-        #time2 = time.time() - start
-
-        #ratio = time1 / time2
-        #print(ratio)
+        gaps = gradientScan_np(scanData, lidarData)
 
         linearDistances, centerGap = processGaps(gaps)
 
