@@ -10,9 +10,9 @@ import math
 
 
 # TODO: modify these constants to make the car follow walls smoothly.
-KP = 0.0
+KP = 0.08
 KI = 0.0
-KD = 0.0
+KD = 0.05
 
 N = 1
 K = .5
@@ -75,6 +75,7 @@ class Interface:
 	# TODO: Based on the error (data.data), determine the car's required velocity
 	# amd steering angle.
 		et = data.pid_error
+		print(et)
 		self.storeError(et)
 
 		currentTime = float(data.header.stamp.nsecs) * pow(10, -9)

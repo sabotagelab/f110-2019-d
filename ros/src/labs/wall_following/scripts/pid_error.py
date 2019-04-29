@@ -16,21 +16,21 @@ MIN_DISTANCE = 0.1
 MAX_DISTANCE = 30.0
 MIN_ANGLE = -45.0
 MAX_ANGLE = 225.0
-THETA = 60
+THETA = 5
 
 #estimated delay from command to steady state
 CONTROL_DELAY_ESTIMATE = 0.5
-lookDistance = 2.5
-
+lookDistance = 0
+DESIRED_DISTANCE = 10
 
 #historical speed, updated continuosly
-lastSpeed = 0
+lastSpeed = 1
 
 # data: single message from topic /scan
 # angle: between 0(far right) to 270 (far left) degrees, where 45 degrees is directly to the right
 # Outputs length in meters to object with angle in lidar scan field of view
 def getRange(data, angle, degrees=False):
-  inc = data.angle_increment * (180/math.pi if degrees else 1)
+  inc = data.angle_increment * (math.pi/180 if degrees else 1)
   index = int(angle / inc)
   index = np.clip([index], 0, len(data.ranges)-1)
   return data.ranges[index]
@@ -38,13 +38,13 @@ def getRange(data, angle, degrees=False):
 # data: single message from topic /scan
 # desired_distance: desired distance to the left wall [meters]
 # Outputs the PID error required to make the car follow the left wall.
-def followLeft(data, desired_distance):
+def followLeft(data, desired_distance=DESIRED_DISTANCE):
   return follow(data, desired_distance, 180, True)
 
 # data: single message from topic /scan
 # desired_distance: desired distance to the right wall [meters]
 # Outputs the PID error required to make the car follow the right wall.
-def followRight(data, desired_distance):
+def followRight(data, desired_distance=DESIRED_DISTANCE):
   return follow(data, desired_distance, 0, True)
   #alpha is returned in radians
 
@@ -81,7 +81,8 @@ modeMap = {
   "left" : followLeft,
   "right" : followRight
 }
-def scan_callback(data, mode="center"):
+def scan_callback(data, mode="right"):
+
 
   error = modeMap[mode](data)
 
