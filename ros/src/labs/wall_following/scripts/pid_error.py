@@ -23,11 +23,6 @@ THETA = 60
 CONTROL_DELAY_ESTIMATE = 0.5
 lookDistance = 2.5
 
-modeMap = {
-  "center" : followCenter,
-  "left" : followLeft,
-  "right" : followRight
-}
 
 #historical speed, updated continuosly
 lastSpeed = 0
@@ -82,9 +77,14 @@ def follow(data, desired_distance, angle, degrees=True):
 
 # Callback for receiving LIDAR data on the /scan topic.
 # data: the LIDAR data, published as a list of distances to the wall.
+modeMap = {
+  "center" : followCenter,
+  "left" : followLeft,
+  "right" : followRight
+}
 def scan_callback(data, mode="center"):
 
-  error = modeMap(data)
+  error = modeMap[mode](data)
 
   msg = pid_angle_input()
   msg.pid_error = error
@@ -93,12 +93,12 @@ def scan_callback(data, mode="center"):
 
 def estimateLookDistance(data):
   lastSpeed = data
-  lookDistance = lastSpeed *
+  lookDistance = lastSpeed * lastSpeed
 
 # Boilerplate code to start this ROS node.
 # DO NOT MODIFY!
 if __name__ == '__main__':
 	rospy.init_node('pid_error_node', anonymous = True)
 	rospy.Subscriber("scan", LaserScan, scan_callback)
-  rospy.Subscriber("/vesc/speed", Float, storeSpeed)
+  #rospy.Subscriber("/vesc/speed", Float, estimateLookDistance)
 	rospy.spin()

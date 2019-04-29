@@ -6,6 +6,7 @@ from std_msgs.msg import Float64
 from wall_following.msg import pid_angle_input
 from collections import deque 
 import numpy as np
+import math
 
 
 # TODO: modify these constants to make the car follow walls smoothly.
@@ -35,13 +36,14 @@ class Interface:
 		rospy.init_node('pid_controller_node', anonymous=True)
 
 		self.drivePub = rospy.Publisher('drive_parameters', drive_param, queue_size=1)
-		self.errSub = rospy.Subscriber("pid_error", pid_angle_input, control_callback)
+		self.errSub = rospy.Subscriber("pid_error", pid_angle_input, self.control_callback)
 
-		self.errorWindow = deque(maxlen=errWindowLen)
+		self.errorWindow = deque([0] * errWindowLen, maxlen=errWindowLen)
 		self.etInt = 0
-		self.weights = np.asarray(map(weightFunc), xrange(errWindowLen))
+		self.weights = np.asarray(map(weightFunc, range(errWindowLen)))
 
-		self.angleWindow = deque(maxlen=angleWindowLen)
+		self.angleWindow = deque([0] * angleWindowLen, maxlen=angleWindowLen)
+		self.lastTime = 0
 
 	def start(self):
 		rospy.spin()
@@ -52,10 +54,10 @@ class Interface:
 		q.appendleft(elem)
 	
 	def storeError(self, elem):
-		storeQ(self.errWindow, elem)
+		self.storeQ(self.errorWindow, elem)
 	
 	def storeAngle(self, elem):
-		storeQ(self.angleWindow, elem)
+		self.storeQ(self.angleWindow, elem)
 	
 	def derivativeError(self):
 		err = np.asarray(self.errorWindow)
@@ -69,23 +71,23 @@ class Interface:
 		angleRemainderDecrease = angleLimitFunc(np.rad2deg(avgAngle % SPD_DEC_ANGLE_PERIOD))
 		return MAX_VEL - angleStepDecrease - angleRemainderDecrease
 
-	def control_callback(data):
+	def control_callback(self, data):
 	# TODO: Based on the error (data.data), determine the car's required velocity
 	# amd steering angle.
 		et = data.pid_error
-		storeError(et)
+		self.storeError(et)
 
-		currentTime = float(data.header.nsecs) * pow(10, -9)
+		currentTime = float(data.header.stamp.nsecs) * pow(10, -9)
 		self.etInt += et * (currentTime - self.lastTime)
 		self.lastTime = currentTime
 
-		ut = KP * et + KI * self.etInt + KD * derivativeError()
+		ut = KP * et + KI * self.etInt + KD * self.derivativeError()
 		self.storeAngle(ut)
 
 		msg = drive_param()
 		msg.angle = ut    # TODO: implement PID for steering angle
-		msg.velocity = self.angleMaxVelocity(ut)  # TODO: implement PID for velocity
-		pub.publish(msg)
+		msg.velocity = self.angleMaxVelocity()  # TODO: implement PID for velocity
+		self.drivePub.publish(msg)
 
 # Boilerplate code to start this ROS node.
 # DO NOT MODIFY!
