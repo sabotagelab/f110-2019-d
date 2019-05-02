@@ -32,7 +32,8 @@ lastSpeed = 1
 def getRange(data, angle, degrees=False):
   inc = data.angle_increment * (math.pi/180 if degrees else 1)
   index = int(angle / inc)
-  index = np.clip([index], 0, len(data.ranges)-1)
+  index = np.clip(index, 0, len(data.ranges)-1)
+  # print(index)
   return data.ranges[index]
 
 # data: single message from topic /scan
