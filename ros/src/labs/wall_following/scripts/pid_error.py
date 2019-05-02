@@ -16,11 +16,11 @@ MIN_DISTANCE = 0.1
 MAX_DISTANCE = 30.0
 MIN_ANGLE = 0
 MAX_ANGLE = 3*math.pi/2
-THETA = math.pi/38
+THETA = math.pi/32
 
 #estimated delay from command to steady state
 CONTROL_DELAY_ESTIMATE = 0.5
-lookDistance = 0
+lookDistance = .1
 DESIRED_DISTANCE = .5
 
 #historical speed, updated continuosly
@@ -39,7 +39,7 @@ def getRange(data, angle):
 # desired_distance: desired distance to the left wall [meters]
 # Outputs the PID error required to make the car follow the left wall.
 def followLeft(data, desired_distance=DESIRED_DISTANCE):
-  return follow(data, desired_distance, math.pi)
+  return follow(data, desired_distance, math.pi) * -1
 
 # data: single message from topic /scan
 # desired_distance: desired distance to the right wall [meters]
@@ -66,9 +66,9 @@ def followCenter(data):
 
 def follow(data, desired_distance, angle):
   b = getRange(data, math.pi/4+angle)
-  a = getRange(data, math.pi/4 + (angle-THETA))
+  a = getRange(data, math.pi/4 + abs(angle-THETA))
   #alpha is returned in radians
-  alpha = math.atan((a*math.cos((angle-THETA)) - b)/(a*math.sin((angle-THETA))))
+  alpha = math.atan((a*math.cos(abs(THETA)) - b)/(a*math.sin(abs(THETA))))
   d_t = b*math.cos(alpha)
   d_tplus1 = d_t + lookDistance*math.sin(alpha)
   error = (desired_distance - d_tplus1)

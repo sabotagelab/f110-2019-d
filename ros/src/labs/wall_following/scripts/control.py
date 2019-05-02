@@ -11,8 +11,8 @@ import math
 
 # TODO: modify these constants to make the car follow walls smoothly.
 KP = .2
-KI = .00
-KD = 0
+KI = .001
+KD = .1
 
 N = 1
 K = .5
@@ -88,6 +88,8 @@ class Interface:
 		msg = drive_param()
 		msg.angle = ut    # TODO: implement PID for steering angle
 		msg.velocity = self.angleMaxVelocity()  # TODO: implement PID for velocity
+		print("ANGLE: ", np.rad2deg(ut))
+		print("VEL: ", msg.velocity)
 		self.drivePub.publish(msg)
 
 # Boilerplate code to start this ROS node.
