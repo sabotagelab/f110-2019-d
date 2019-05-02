@@ -10,9 +10,9 @@ import math
 
 
 # TODO: modify these constants to make the car follow walls smoothly.
-KP = -.1
+KP = .1
 KI = .00
-KD = 1
+KD = 0
 
 N = 1
 K = .5

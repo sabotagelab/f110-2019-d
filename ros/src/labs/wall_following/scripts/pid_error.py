@@ -21,7 +21,7 @@ THETA = 5
 #estimated delay from command to steady state
 CONTROL_DELAY_ESTIMATE = 0.5
 lookDistance = 0
-DESIRED_DISTANCE = 1
+DESIRED_DISTANCE = .5
 
 #historical speed, updated continuosly
 lastSpeed = 1
@@ -32,7 +32,7 @@ lastSpeed = 1
 def getRange(data, angle, degrees=False):
   inc = data.angle_increment * (math.pi/180 if degrees else 1)
   index = int(angle / inc)
-  index = np.clip([index], 0, len(data.ranges)-1)
+  index = np.clip(index, 0, len(data.ranges)-1)
   return data.ranges[index]
 
 # data: single message from topic /scan
@@ -71,7 +71,7 @@ def follow(data, desired_distance, angle, degrees=True):
   alpha = math.atan((a*math.cos(math.radians((angle-THETA))) - b)/(a*math.sin(math.radians((angle-THETA)))))
   d_t = b*math.cos(alpha)
   d_tplus1 = d_t + lookDistance*math.sin(alpha)
-  error = desired_distance - d_tplus1
+  error = d_tplus1 - desired_distance
   return error
 
 # Callback for receiving LIDAR data on the /scan topic.
