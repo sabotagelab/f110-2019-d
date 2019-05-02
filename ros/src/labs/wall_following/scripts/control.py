@@ -21,6 +21,7 @@ weightFunc = lambda x : N*math.exp(-K*x)
 SPD_DEC_ANGLE_PERIOD = np.deg2rad(10)
 SPD_DEC_ANGLE_MAX = np.deg2rad(20)
 MAX_VEL = 1.5 #m/s
+MIN_VEL = .5
 
 A = .5 #top of decrease
 B = 0 #bottom of decrease
@@ -63,13 +64,13 @@ class Interface:
 		err = np.asarray(self.errorWindow)
 		return np.average(np.gradient(err), weights=self.weights)
 	
-	def angleMaxVelocity(self):
-		avgAngle = abs(np.average(np.asarray(self.angleWindow))) #sign does not matter since we are only determining speed
+	def angleMaxVelocity(self, angle):
+		#avgAngle = abs(np.average(np.asarray(self.angleWindow))) #sign does not matter since we are only determining speed
+		avgAngle = angle
 		avgAngle = max(min(avgAngle, SPD_DEC_ANGLE_MAX), 0) #clamp angle between 0 and max angle
-		avgAngle = np.deg2rad(avgAngle)
-		angleStepDecrease = (avgAngle / SPD_DEC_ANGLE_PERIOD) * A
-		angleRemainderDecrease = angleLimitFunc(np.rad2deg(avgAngle % SPD_DEC_ANGLE_PERIOD))
-		return MAX_VEL - angleStepDecrease - angleRemainderDecrease
+		angleStepDecrease = (int(avgAngle / SPD_DEC_ANGLE_PERIOD)) * A
+		angleRemainderInc = angleLimitFunc(np.rad2deg(avgAngle % SPD_DEC_ANGLE_PERIOD))
+		return MAX_VEL - MIN_VEL - angleStepDecrease + angleRemainderInc
 
 	def control_callback(self, data):
 	# TODO: Based on the error (data.data), determine the car's required velocity
@@ -87,7 +88,7 @@ class Interface:
 
 		msg = drive_param()
 		msg.angle = ut    # TODO: implement PID for steering angle
-		msg.velocity = self.angleMaxVelocity()  # TODO: implement PID for velocity
+		msg.velocity = self.angleMaxVelocity(ut)  # TODO: implement PID for velocity
 		print("ANGLE: ", np.rad2deg(ut))
 		print("VEL: ", msg.velocity)
 		self.drivePub.publish(msg)

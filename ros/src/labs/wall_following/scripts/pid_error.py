@@ -21,7 +21,7 @@ THETA = math.pi/32
 #estimated delay from command to steady state
 CONTROL_DELAY_ESTIMATE = 0.5
 lookDistance = .1
-DESIRED_DISTANCE = .5
+DESIRED_DISTANCE = .75
 
 #historical speed, updated continuosly
 lastSpeed = 1
