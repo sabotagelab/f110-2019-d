@@ -14,9 +14,9 @@ pub = rospy.Publisher('pid_error', pid_angle_input, queue_size=10)
 # You can define constants in Python as uppercase global names like these.
 MIN_DISTANCE = 0.1
 MAX_DISTANCE = 30.0
-MIN_ANGLE = -45.0
-MAX_ANGLE = 225.0
-THETA = 5
+MIN_ANGLE = 0
+MAX_ANGLE = 3*math.pi/2
+THETA = math.pi/38
 
 #estimated delay from command to steady state
 CONTROL_DELAY_ESTIMATE = 0.5
@@ -29,27 +29,23 @@ lastSpeed = 1
 # data: single message from topic /scan
 # angle: between 0(far right) to 270 (far left) degrees, where 45 degrees is directly to the right
 # Outputs length in meters to object with angle in lidar scan field of view
-def getRange(data, angle, degrees=False):
-  inc = data.angle_increment * (math.pi/180 if degrees else 1)
+def getRange(data, angle):
+  inc = data.angle_increment 
   index = int(angle / inc)
   index = np.clip(index, 0, len(data.ranges)-1)
-<<<<<<< HEAD
-=======
-  # print(index)
->>>>>>> 4eb5d5746aa6be01921e2824267590baa756854c
   return data.ranges[index]
 
 # data: single message from topic /scan
 # desired_distance: desired distance to the left wall [meters]
 # Outputs the PID error required to make the car follow the left wall.
 def followLeft(data, desired_distance=DESIRED_DISTANCE):
-  return follow(data, desired_distance, 180, True)
+  return follow(data, desired_distance, math.pi)
 
 # data: single message from topic /scan
 # desired_distance: desired distance to the right wall [meters]
 # Outputs the PID error required to make the car follow the right wall.
 def followRight(data, desired_distance=DESIRED_DISTANCE):
-  return follow(data, desired_distance, 0, True)
+  return follow(data, desired_distance, 0)
   #alpha is returned in radians
 
 # data: single message from topic /scan
@@ -57,10 +53,10 @@ def followRight(data, desired_distance=DESIRED_DISTANCE):
 # of the hallway.
 def followCenter(data):
   d_centre = abs(followRight(data, 0)+followLeft(data, 0))/2
-  b = getRange(data, 45, True)
-  a = getRange(data, 45+THETA, True)
+  b = getRange(data, math.pi/4)
+  a = getRange(data, math.pi/4+THETA)
   #alpha is returned in radians
-  alpha = math.atan((a*math.cos(math.radians(THETA)) - b)/(a*math.sin(math.radians(THETA))))
+  alpha = math.atan((a*math.cos(THETA) - b)/(a*math.sin(THETA)))
   d_t = b*math.cos(alpha)
   d_t = d_centre - d_t
   d_tplus1 = d_t + lookDistance*math.sin(alpha)
@@ -68,14 +64,14 @@ def followCenter(data):
 
   return error
 
-def follow(data, desired_distance, angle, degrees=True):
-  b = getRange(data, 45+angle, degrees)
-  a = getRange(data, 45 + (angle-THETA), degrees)
+def follow(data, desired_distance, angle):
+  b = getRange(data, math.pi/4+angle)
+  a = getRange(data, math.pi/4 + (angle-THETA))
   #alpha is returned in radians
-  alpha = math.atan((a*math.cos(math.radians((angle-THETA))) - b)/(a*math.sin(math.radians((angle-THETA)))))
+  alpha = math.atan((a*math.cos((angle-THETA)) - b)/(a*math.sin((angle-THETA))))
   d_t = b*math.cos(alpha)
   d_tplus1 = d_t + lookDistance*math.sin(alpha)
-  error = d_tplus1 - desired_distance
+  error = (desired_distance - d_tplus1)
   return error
 
 # Callback for receiving LIDAR data on the /scan topic.
@@ -85,7 +81,7 @@ modeMap = {
   "left" : followLeft,
   "right" : followRight
 }
-def scan_callback(data, mode="right"):
+def scan_callback(data, mode="left"):
   error = modeMap[mode](data)
 
   msg = pid_angle_input()
