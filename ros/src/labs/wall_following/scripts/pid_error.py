@@ -21,7 +21,7 @@ THETA = 5
 #estimated delay from command to steady state
 CONTROL_DELAY_ESTIMATE = 0.5
 lookDistance = 0
-DESIRED_DISTANCE = 10
+DESIRED_DISTANCE = 1
 
 #historical speed, updated continuosly
 lastSpeed = 1
@@ -66,9 +66,9 @@ def followCenter(data):
 
 def follow(data, desired_distance, angle, degrees=True):
   b = getRange(data, 45+angle, degrees)
-  a = getRange(data, 45+abs(angle-THETA), degrees)
+  a = getRange(data, 45 + (angle-THETA), degrees)
   #alpha is returned in radians
-  alpha = math.atan((a*math.cos(math.radians(abs(angle-THETA))) - b)/(a*math.sin(math.radians(abs(angle-THETA)))))
+  alpha = math.atan((a*math.cos(math.radians((angle-THETA))) - b)/(a*math.sin(math.radians((angle-THETA)))))
   d_t = b*math.cos(alpha)
   d_tplus1 = d_t + lookDistance*math.sin(alpha)
   error = desired_distance - d_tplus1
@@ -82,8 +82,6 @@ modeMap = {
   "right" : followRight
 }
 def scan_callback(data, mode="right"):
-
-
   error = modeMap[mode](data)
 
   msg = pid_angle_input()
