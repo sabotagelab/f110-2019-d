@@ -75,7 +75,8 @@ def gradientScan_np(scan, data, z=2, coe=1.1):
 
     innerClusterDiff = 1
     icd = innerClusterDiff
-    spikes = hits[np.where(np.asarray([icd+1] + np.diff(hits).tolist()) > icd)[0]].tolist()
+    # spikes = hits[np.where(np.asarray([icd+1] + np.diff(hits).tolist()) > icd)[0]].tolist()
+    spikes = hits[np.where(np.asarray([icd+1] + np.diff(hits).tolist()) > icd)].tolist()
     spikes.append(len(scan.ranges)-1)
 
     gaps = []
