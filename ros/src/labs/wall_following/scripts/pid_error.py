@@ -30,7 +30,7 @@ lastSpeed = 1
 # angle: between 0(far right) to 270 (far left) degrees, where 45 degrees is directly to the right
 # Outputs length in meters to object with angle in lidar scan field of view
 def getRange(data, angle):
-  inc = data.angle_increment 
+  inc = data.angle_increment
   index = int(angle / inc)
   index = np.clip(index, 0, len(data.ranges)-1)
   return data.ranges[index]
@@ -52,16 +52,27 @@ def followRight(data, desired_distance=DESIRED_DISTANCE):
 # Outputs the PID error required to make the car drive in the middle
 # of the hallway.
 def followCenter(data):
-  d_centre = abs(followRight(data, 0)+followLeft(data, 0))/2
-  b = getRange(data, math.pi/4)
-  a = getRange(data, math.pi/4+THETA)
-  #alpha is returned in radians
-  alpha = math.atan((a*math.cos(THETA) - b)/(a*math.sin(THETA)))
-  d_t = b*math.cos(alpha)
-  d_t = d_centre - d_t
-  d_tplus1 = d_t + lookDistance*math.sin(alpha)
-  error = 0 - d_tplus1
+  #Get left and right perpendicular distance, add and divide by 2 to get
+  #center distance, then follow right wall with desired distance as d_centre
 
+  #get left distance
+  b = getRange(data, math.pi/4+math.pi)
+  a = getRange(data, math.pi/4 + abs(math.pi-THETA))
+  #alpha is returned in radians
+  alpha = math.atan((a*math.cos(abs(THETA)) - b)/(a*math.sin(abs(THETA))))
+  d_tl = b*math.cos(alpha)
+
+  #get right distance
+  b = getRange(data, math.pi/4)
+  a = getRange(data, math.pi/4 + abs(THETA))
+  #alpha is returned in radians
+  alpha = math.atan((a*math.cos(abs(THETA)) - b)/(a*math.sin(abs(THETA))))
+  d_tr = b*math.cos(alpha)
+
+  d_centre = (d_tr + d_tl)/2
+
+  d_tplus1 = d_tr + lookDistance*math.sin(alpha)
+  error = (d_centre - d_tplus1)
   return error
 
 def follow(data, desired_distance, angle):
@@ -81,7 +92,7 @@ modeMap = {
   "left" : followLeft,
   "right" : followRight
 }
-def scan_callback(data, mode="left"):
+def scan_callback(data, mode="center"):
   error = modeMap[mode](data)
 
   msg = pid_angle_input()
