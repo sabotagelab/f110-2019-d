@@ -10,9 +10,9 @@ import math
 
 
 # TODO: modify these constants to make the car follow walls smoothly.
-KP = .1
-KI = 0
-KD = 0
+KP = 1.7
+KI = .001
+KD = 1
 
 SPD_DEC_ANGLE_PERIOD = np.deg2rad(10)
 SPD_DEC_ANGLE_MAX = np.deg2rad(20)
@@ -38,6 +38,7 @@ class Interface:
 		self.lastErr = 0
 		self.calls = 0
 		self.errTotal = 0
+		self.angle = 0
 
 	def start(self):
 		rospy.spin()
@@ -80,19 +81,19 @@ class Interface:
 		self.errTotal += et
 
 
-		deriverr = et - self.lastErr
-		interr = self.errTotal/self.calls
+		deriverr = (et - self.lastErr)
+		interr = self.errTotal
 
 		ut = KP * et + KI * interr + KD * deriverr
-
-		# if abs(ut) > SPD_DEC_ANGLE_MAX:
-		# 	ut = np.sign(ut)*SPD_DEC_ANGLE_MAX
-
+		self.angle += ut
+		if (abs(self.angle) > SPD_DEC_ANGLE_MAX or np.isnan(self.angle)):
+			self.angle = np.sign(self.angle)*SPD_DEC_ANGLE_MAX
+		
 		self.lastErr = et
 
 		msg = drive_param()
-		msg.angle = ut    # TODO: implement PID for steering angle
-		msg.velocity = self.angleMaxVelocity(ut)  # TODO: implement PID for velocity
+		msg.angle = self.angle    # TODO: implement PID for steering angle
+		msg.velocity = self.angleMaxVelocity(self.angle)  # TODO: implement PID for velocity
 		print("ANGLE: ", np.rad2deg(ut))
 		print("VEL: ", msg.velocity)
 		self.drivePub.publish(msg)

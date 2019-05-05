@@ -20,7 +20,7 @@ THETA = math.pi/32
 
 #estimated delay from command to steady state
 CONTROL_DELAY_ESTIMATE = 0.5
-lookDistance = .1
+lookDistance = 1
 DESIRED_DISTANCE = .75
 
 #historical speed, updated continuosly
@@ -83,6 +83,11 @@ def follow(data, desired_distance, angle):
   d_t = b*math.cos(alpha)
   d_tplus1 = d_t + lookDistance*math.sin(alpha)
   error = (desired_distance - d_tplus1)
+  if np.isnan(error):
+    error = 0
+  else: 
+    if np.isinf(error):
+      error = data.range_max
   return error
 
 # Callback for receiving LIDAR data on the /scan topic.
@@ -92,7 +97,7 @@ modeMap = {
   "left" : followLeft,
   "right" : followRight
 }
-def scan_callback(data, mode="center"):
+def scan_callback(data, mode="left"):
   error = modeMap[mode](data)
 
   msg = pid_angle_input()
