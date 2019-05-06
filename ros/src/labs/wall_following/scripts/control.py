@@ -10,9 +10,9 @@ import math
 
 
 # TODO: modify these constants to make the car follow walls smoothly.
-KP = .2
+KP = 1.7
 KI = .001
-KD = .1
+KD = 1
 
 N = 1
 K = .5
@@ -45,6 +45,11 @@ class Interface:
 
 		self.angleWindow = deque([0] * angleWindowLen, maxlen=angleWindowLen)
 		self.lastTime = 0
+		self.currentTime = 0
+
+		self.angle = 0
+		self.lastAngle = 0
+		self.lastError = 0
 
 	def start(self):
 		rospy.spin()
@@ -60,9 +65,13 @@ class Interface:
 	def storeAngle(self, elem):
 		self.storeQ(self.angleWindow, elem)
 	
-	def derivativeError(self):
-		err = np.asarray(self.errorWindow)
-		return np.average(np.gradient(err), weights=self.weights)
+	def derivativeError(self, error):
+		return (error - self.lastError)
+		#err = np.asarray(self.errorWindow)
+		#return np.average(np.gradient(err), weights=self.weights)
+	
+	def integralError(self, error):
+		return error#(self.currentTime - self.lastTime) * error
 	
 	def angleMaxVelocity(self, angle):
 		#avgAngle = abs(np.average(np.asarray(self.angleWindow))) #sign does not matter since we are only determining speed
@@ -73,23 +82,29 @@ class Interface:
 		return MAX_VEL - MIN_VEL - angleStepDecrease + angleRemainderInc
 
 	def control_callback(self, data):
-	# TODO: Based on the error (data.data), determine the car's required velocity
-	# amd steering angle.
+		#calculate frame time
+		self.lastTime = self.currentTime
+		self.currentTime = float(data.header.stamp.nsecs) * pow(10, -9)
+
+		#get and store error
 		et = data.pid_error
-		print(et)
 		self.storeError(et)
 
-		currentTime = float(data.header.stamp.nsecs) * pow(10, -9)
-		self.etInt += et * (currentTime - self.lastTime)
-		self.lastTime = currentTime
+		#weighted pid equation for angle increment
+		ut = KP * et + KI * self.integralError(et) + KD * self.derivativeError(et)
+		self.angle += ut
+		if np.isnan(self.angle):
+			self.angle = np.nanmean(self.angleWindow)
+		self.angle = max(min(self.angle, SPD_DEC_ANGLE_MAX), -1*SPD_DEC_ANGLE_MAX) #clamp angle between -/+ max angle
 
-		ut = KP * et + KI * self.etInt + KD * self.derivativeError()
-		self.storeAngle(ut)
+		#store historical data
+		self.lastError = et
+		self.storeAngle(self.angle)
 
 		msg = drive_param()
-		msg.angle = ut    # TODO: implement PID for steering angle
-		msg.velocity = self.angleMaxVelocity(ut)  # TODO: implement PID for velocity
-		print("ANGLE: ", np.rad2deg(ut))
+		msg.angle = self.angle    # TODO: implement PID for steering angle
+		msg.velocity = self.angleMaxVelocity(self.angle)  # TODO: implement PID for velocity
+		print("ANGLE: ", np.rad2deg(self.angle))
 		print("VEL: ", msg.velocity)
 		self.drivePub.publish(msg)
 
