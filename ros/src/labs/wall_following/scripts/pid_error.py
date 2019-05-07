@@ -39,7 +39,7 @@ modeEnumMap = {
   0 : followCenter,
   1 : followRight,
   2 : followLeft
-  #3 : followGap
+  3 : followGap
 }
 # data: single message from topic /scan
 # angle: between 0(far right) to 270 (far left) degrees, where 45 degrees is directly to the right
@@ -107,7 +107,7 @@ def follow(data, desired_distance, angle):
 
 def followGap(angle):
 
-  return lookDistance*math.sin(alpha-math.radians(135))
+  return lookDistance*math.sin(angle)
 
 
 # Callback for receiving LIDAR data on the /scan topic.
