@@ -7,12 +7,13 @@ from wall_following.msg import pid_angle_input
 from collections import deque 
 import numpy as np
 import math
+import time
 
 
 # TODO: modify these constants to make the car follow walls smoothly.
-KP = 1.7
+KP = .05
 KI = .001
-KD = 1
+KD = 0
 
 N = 1
 K = .5
@@ -26,7 +27,7 @@ MIN_VEL = .5
 A = .5 #top of decrease
 B = 0 #bottom of decrease
 C = 8 #centerpoint of decrease
-R = 2 #steepness of decrease (negative values make increase)
+R = 1.5 #steepness of decrease (negative values make increase)
 angleLimitFunc = lambda angle : (A*math.exp(C*R) + B * math.exp(R*angle))/(math.exp(C*R) + math.exp(R*angle))
 
 # Callback for receiving PID error data on the /pid_error topic
@@ -44,7 +45,7 @@ class Interface:
 		self.weights = np.asarray(map(weightFunc, range(errWindowLen)))
 
 		self.angleWindow = deque([0] * angleWindowLen, maxlen=angleWindowLen)
-		self.lastTime = 0
+		self.lastTime = time.time()
 		self.currentTime = 0
 
 		self.angle = 0
@@ -66,33 +67,34 @@ class Interface:
 		self.storeQ(self.angleWindow, elem)
 	
 	def derivativeError(self, error):
-		return (error - self.lastError)
+		return (error - self.lastError) / (self.currentTime - self.lastTime)
 		#err = np.asarray(self.errorWindow)
 		#return np.average(np.gradient(err), weights=self.weights)
 	
 	def integralError(self, error):
-		return error#(self.currentTime - self.lastTime) * error
+		return (self.currentTime - self.lastTime) * error
 	
 	def angleMaxVelocity(self, angle):
 		#avgAngle = abs(np.average(np.asarray(self.angleWindow))) #sign does not matter since we are only determining speed
-		avgAngle = angle
-		avgAngle = max(min(avgAngle, SPD_DEC_ANGLE_MAX), 0) #clamp angle between 0 and max angle
+		avgAngle = min(abs(angle), SPD_DEC_ANGLE_MAX)
 		angleStepDecrease = (int(avgAngle / SPD_DEC_ANGLE_PERIOD)) * A
 		angleRemainderInc = angleLimitFunc(np.rad2deg(avgAngle % SPD_DEC_ANGLE_PERIOD))
 		return MAX_VEL - MIN_VEL - angleStepDecrease + angleRemainderInc
 
 	def control_callback(self, data):
 		#calculate frame time
-		self.lastTime = self.currentTime
-		self.currentTime = float(data.header.stamp.nsecs) * pow(10, -9)
+		self.currentTime = time.time()#float(data.header.stamp.nsecs) * pow(10, -9)
+		#print(self.currentTime - self.lastTime)
 
 		#get and store error
 		et = data.pid_error
 		self.storeError(et)
 
+		self.etInt += self.integralError(et)
+
 		#weighted pid equation for angle increment
-		ut = KP * et + KI * self.integralError(et) + KD * self.derivativeError(et)
-		self.angle += ut
+		ut = KP * et + KI * self.etInt + KD * self.derivativeError(et)
+		self.angle += ut #* (self.currentTime - self.lastTime)
 		if np.isnan(self.angle):
 			self.angle = np.nanmean(self.angleWindow)
 		self.angle = max(min(self.angle, SPD_DEC_ANGLE_MAX), -1*SPD_DEC_ANGLE_MAX) #clamp angle between -/+ max angle
@@ -100,12 +102,14 @@ class Interface:
 		#store historical data
 		self.lastError = et
 		self.storeAngle(self.angle)
+		self.lastTime = self.currentTime
 
 		msg = drive_param()
 		msg.angle = self.angle    # TODO: implement PID for steering angle
 		msg.velocity = self.angleMaxVelocity(self.angle)  # TODO: implement PID for velocity
-		print("ANGLE: ", np.rad2deg(self.angle))
-		print("VEL: ", msg.velocity)
+		#print("ERROR: ", et)
+		#print("ANGLE: ", np.rad2deg(self.angle))
+		#print("VEL: ", msg.velocity)
 		self.drivePub.publish(msg)
 
 # Boilerplate code to start this ROS node.
