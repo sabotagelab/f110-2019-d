@@ -100,10 +100,15 @@ def follow(data, desired_distance, angle):
   error = (desired_distance - d_tplus1)
   if np.isnan(error):
     error = 0
-  else: 
+  else:
     if np.isinf(error):
       error = data.range_max
   return error
+
+def followGap(angle):
+
+  return lookDistance*math.sin(alpha-math.radians(135))
+
 
 # Callback for receiving LIDAR data on the /scan topic.
 # data: the LIDAR data, published as a list of distances to the wall.
