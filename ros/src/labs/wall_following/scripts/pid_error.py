@@ -20,7 +20,7 @@ THETA = math.pi/32
 
 #estimated delay from command to steady state
 CONTROL_DELAY_ESTIMATE = 0.5
-lookDistance = 1
+lookDistance = 2 
 DESIRED_DISTANCE = .75
 
 #historical speed, updated continuosly
@@ -97,7 +97,7 @@ modeMap = {
   "left" : followLeft,
   "right" : followRight
 }
-def scan_callback(data, mode="left"):
+def scan_callback(data, mode="center"):
   error = modeMap[mode](data)
 
   msg = pid_angle_input()

@@ -10,6 +10,9 @@ def processGaps(gaps):
     linearDistances = np.asarray(map(processGap, gaps))
     #maxGap = max(gaps, key=lambda gap : np.average(gap))
     depths = np.array([np.average(g) for g in gaps])
+    minDepth = np.min(depths)
+    depths -= minDepth
+    depths *= depths * linearDistances
     wideEnough = np.where(linearDistances > pow(carWidth * minimumWidthRatio, 2))
     mask = np.ones(len(depths), dtype=int)
     mask[wideEnough] = 0

@@ -11,9 +11,9 @@ import time
 
 
 # TODO: modify these constants to make the car follow walls smoothly.
-KP = .05
-KI = .001
-KD = 0
+KP = .1 
+KI = 0
+KD = 0.01
 
 N = 1
 K = .5
@@ -21,8 +21,8 @@ weightFunc = lambda x : N*math.exp(-K*x)
 
 SPD_DEC_ANGLE_PERIOD = np.deg2rad(10)
 SPD_DEC_ANGLE_MAX = np.deg2rad(20)
-MAX_VEL = 1.5 #m/s
-MIN_VEL = .5
+MAX_VEL = 4.5 #m/s
+MIN_VEL = 3 
 
 A = .5 #top of decrease
 B = 0 #bottom of decrease
@@ -94,7 +94,7 @@ class Interface:
 
 		#weighted pid equation for angle increment
 		ut = KP * et + KI * self.etInt + KD * self.derivativeError(et)
-		self.angle += ut #* (self.currentTime - self.lastTime)
+		self.angle = ut #* (self.currentTime - self.lastTime)
 		if np.isnan(self.angle):
 			self.angle = np.nanmean(self.angleWindow)
 		self.angle = max(min(self.angle, SPD_DEC_ANGLE_MAX), -1*SPD_DEC_ANGLE_MAX) #clamp angle between -/+ max angle
@@ -106,7 +106,7 @@ class Interface:
 
 		msg = drive_param()
 		msg.angle = self.angle    # TODO: implement PID for steering angle
-		msg.velocity = self.angleMaxVelocity(self.angle)  # TODO: implement PID for velocity
+		msg.velocity = -self.angleMaxVelocity(self.angle)  # TODO: implement PID for velocity
 		#print("ERROR: ", et)
 		#print("ANGLE: ", np.rad2deg(self.angle))
 		#print("VEL: ", msg.velocity)

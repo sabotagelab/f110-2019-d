@@ -19,7 +19,7 @@ JOY_INIT_DELAY = 5             # 5 seconds
 
 joystick_present = False
 timer_callback_running = True
-
+#joy_timer = rospy.timer.Timer(rospy.Duration(-1, JOY_TIMER_PERIOD), timer_callback, oneshot=True)
 rospy.init_node("dead_mans_switch")
 
 # Callback for monitoring whether the joystick is present or not.
@@ -51,7 +51,7 @@ def timer_callback(event):
 # Need to initialize joy_timer twice: once at startup (here), and another time in the callback.
 # Reason: the time.sleep() call introduces delay and might lead to the callback being called again when
 # it should be sleeping. This is also why we must use a one-shot timer instead of a repeating one.
-joy_timer = rospy.timer.Timer(rospy.Duration(0, JOY_TIMER_PERIOD), timer_callback, oneshot=True)
+joy_timer = rospy.timer.Timer(rospy.Duration(-1, JOY_TIMER_PERIOD), timer_callback, oneshot=True)
 
 def callback(data):
     global joystick_present
