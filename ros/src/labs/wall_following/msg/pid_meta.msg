@@ -1,0 +1,3 @@
+float32 error_avg
+float32 error_max
+float32 error_min

@@ -2,12 +2,11 @@
 import rospy
 import math
 import numpy as np
-import yaml
 import sys
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Float64
 import pdb
-from wall_following.msg import pid_angle_input
+from wall_following.msg import pid_angle_input, follow_type
 
 pub = rospy.Publisher('pid_error', pid_angle_input, queue_size=10)
 
@@ -25,6 +24,17 @@ DESIRED_DISTANCE = .75
 
 #historical speed, updated continuosly
 lastSpeed = 1
+
+currentMode = "center"
+currentEnumMode = 1
+currentGapAngle = 0
+modeMap = {
+  "center" : 0,
+  "left" : 1,
+  "right" : 2,
+  "gap" : 3
+}
+
 
 # data: single message from topic /scan
 # angle: between 0(far right) to 270 (far left) degrees, where 45 degrees is directly to the right
@@ -85,20 +95,26 @@ def follow(data, desired_distance, angle):
   error = (desired_distance - d_tplus1)
   if np.isnan(error):
     error = 0
-  else: 
+  else:
     if np.isinf(error):
       error = data.range_max
   return error
 
+def followGap(angle):
+  return lookDistance*math.sin(angle)
+
+modeEnumMap = dict([
+  (0 , followCenter),
+  (1 , followRight),
+  (2 , followLeft),
+  (3 , followGap)
+])
+
 # Callback for receiving LIDAR data on the /scan topic.
 # data: the LIDAR data, published as a list of distances to the wall.
-modeMap = {
-  "center" : followCenter,
-  "left" : followLeft,
-  "right" : followRight
-}
-def scan_callback(data, mode="center"):
-  error = modeMap[mode](data)
+
+def scan_callback(data):
+  error = modeEnumMap[currentEnumMode](data)
 
   msg = pid_angle_input()
   msg.pid_error = error
@@ -109,10 +125,14 @@ def estimateLookDistance(data):
   lastSpeed = data
   lookDistance = lastSpeed * lastSpeed
 
+def changeFollowType(data):
+  currentEnumMode = data.type
+  currentGapAngle = data.gap_angle
+
 # Boilerplate code to start this ROS node.
 # DO NOT MODIFY!
 if __name__ == '__main__':
-	rospy.init_node('pid_error_node', anonymous = True)
-	rospy.Subscriber("scan", LaserScan, scan_callback)
-  #rospy.Subscriber("/vesc/speed", Float, estimateLookDistance)
-	rospy.spin()
+  rospy.init_node('pid_error_node', anonymous = True)
+  rospy.Subscriber("scan", LaserScan, scan_callback)
+  rospy.Subscriber("follow_types", follow_type, changeFollowType)
+  rospy.spin()

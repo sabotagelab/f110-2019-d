@@ -12,5 +12,6 @@
   <node pkg="wall_following" name="pid_error_node" type="pid_error.py" output="screen" if="$(arg live)"/> 
   <node pkg="wall_following" name="control_node" type="control.py" output="screen" if="$(arg live)"/>
   <node pkg="wall_following" name="sim_connector_node" type="sim_connector.py" output="screen" if="$(arg live)"/>
+  <node pkg="wall_following" name="pid_meta_node" type="pemdas_analysis.py" output="screen" if="$(arg live)"/>
 
 </launch>

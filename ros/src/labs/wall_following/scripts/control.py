@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+!/usr/bin/env python
 
 import rospy
 from race.msg import drive_param
@@ -11,9 +11,15 @@ import time
 
 
 # TODO: modify these constants to make the car follow walls smoothly.
+
 KP = .1 
 KI = 0
 KD = 0.01
+
+
+
+
+
 
 N = 1
 K = .5

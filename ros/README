@@ -1,0 +1,8 @@
+EXTRA DEPENDENCIES: (prefix with ros-<version>-)
+
+ros-control
+gazebo-ros-control
+driver_base
+effort-controllers
+joint-state-controller
+
