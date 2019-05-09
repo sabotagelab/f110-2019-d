@@ -8,12 +8,14 @@ from collections import deque
 import numpy as np
 import math
 import time
+import sys
 
 
 # TODO: modify these constants to make the car follow walls smoothly.
 KP = .03
 KI = .00
 KD = .000
+
 
 #KP = .1 
 #KI = 0
@@ -55,6 +57,11 @@ class Interface:
 		self.angle = 0
 		self.lastAngle = 0
 		self.lastError = 0
+
+		if len(sys.argv) > 1:
+			self.configFile = sys.argv[1]
+		if len(sys.argv) > 2 and sys.argv[2] == "true":
+			self.velocityMultiple = -1
 
 	def start(self):
 		rospy.spin()
@@ -114,7 +121,7 @@ class Interface:
 
 		msg = drive_param()
 		msg.angle = self.angle    # TODO: implement PID for steering angle
-		msg.velocity = self.angleMaxVelocity(self.angle)  # TODO: implement PID for velocity
+		msg.velocity = self.angleMaxVelocity(self.angle) * self.velocityMultiple # TODO: implement PID for velocity
 		#print("ERROR: ", et)
 		#print("ANGLE: ", np.rad2deg(self.angle))
 		#print("VEL: ", msg.velocity)
