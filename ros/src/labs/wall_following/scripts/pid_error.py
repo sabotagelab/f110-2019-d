@@ -7,28 +7,37 @@ from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Float64
 import pdb
 from wall_following.msg import pid_angle_input, follow_type
+import yaml
+import os
 from race.msg import drive_param
 
 pub = rospy.Publisher('pid_error', pid_angle_input, queue_size=10)
 
+dirname = os.path.dirname(__file__)
+filepath = os.path.join(dirname, '../config/config.yaml')
+with open (filepath, 'r') as f:
+	doc = yaml.load(f)
+
+
+
 # You can define constants in Python as uppercase global names like these.
-MIN_DISTANCE = 0.1
-MAX_DISTANCE = 30.0
+MIN_DISTANCE = doc["pid_error"]["MIN_DISTANCE"]
+MAX_DISTANCE = doc["pid_error"]["MAX_DISTANCE"]
 MIN_ANGLE = 0
 MAX_ANGLE = 3*math.pi/2
 THETA = math.pi/16
 
 #estimated delay from command to steady state
-CONTROL_DELAY_ESTIMATE = 0.5
-lookDistance = 1.5
-DESIRED_DISTANCE = .75
+CONTROL_DELAY_ESTIMATE = doc["pid_error"]["CONTROL_DELAY_ESTIMATE"]
+lookDistance = doc["pid_error"]["lookDistance"]
+DESIRED_DISTANCE = doc["pid_error"]["DESIRED_DISTANCE"]
 
 #historical speed, updated continuosly
 lastSpeed = 1
 
-currentMode = "right"
-currentEnumMode = 1
-currentGapAngle = 0
+currentMode = doc["pid_error"]["currentMode"]
+currentEnumMode = doc["pid_error"]["currentEnumMode"]
+currentGapAngle = doc["pid_error"]["currentGapAngle"]
 modeMap = {
   "center" : 0,
   "left" : 1,

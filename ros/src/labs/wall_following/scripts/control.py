@@ -4,20 +4,29 @@ import rospy
 from race.msg import drive_param
 from std_msgs.msg import Float64
 from wall_following.msg import pid_angle_input
-from collections import deque 
+from collections import deque
 import numpy as np
 import math
 import time
+import yaml
+import os
 import sys
 
+dirname = os.path.dirname(__file__)
+filepath = os.path.join(dirname, '../config/config.yaml')
+#print(filepath)
 
-# TODO: modify these constants to make the car follow walls smoothly.
-KP = .05
-KI = .0001
-KD = .000
+with open (filepath, 'r') as f:
+	doc = yaml.load(f)
 
-N = 1
-K = .5
+
+
+KP = doc["control"]["KP"]
+KI = doc["control"]["KI"]
+KD = doc["control"]["KD"]
+
+N = doc["control"]["N"]
+K = doc["control"]["K"]
 weightFunc = lambda x : N*math.exp(-K*x)
 
 SPD_DEC_ANGLE_PERIOD = np.deg2rad(10)
@@ -67,24 +76,24 @@ class Interface:
 		if not len(q) < q.maxlen:
 			q.pop()
 		q.appendleft(elem)
-	
+
 	def storeError(self, elem):
 		self.storeQ(self.errorWindow, elem)
-	
+
 	def storeAngle(self, elem):
 		self.storeQ(self.angleWindow, elem)
-	
+
 	def derivativeError(self, error):
 		return (error - self.lastError) / (self.currentTime - self.lastTime)
 		#err = np.asarray(self.errorWindow)
 		#return np.average(np.gradient(err), weights=self.weights)
-	
+
 	def integralError(self, error):
 		return (self.currentTime - self.lastTime) * error
 
 	def proportionError(self, error):
 		return error
-	
+
 	def angleMaxVelocity(self, angle):
 		#avgAngle = abs(np.average(np.asarray(self.angleWindow))) #sign does not matter since we are only determining speed
 		avgAngle = min(abs(angle), SPD_DEC_ANGLE_MAX)
@@ -129,4 +138,3 @@ class Interface:
 if __name__ == '__main__':
 	iface = Interface(10, 5)
 	iface.start()
-
