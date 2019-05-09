@@ -26,7 +26,7 @@ DESIRED_DISTANCE = .75
 lastSpeed = 1
 
 currentMode = "center"
-currentEnumMode = 0
+currentEnumMode = 1
 currentGapAngle = 0
 modeMap = {
   "center" : 0,
@@ -35,12 +35,7 @@ modeMap = {
   "gap" : 3
 }
 
-modeEnumMap = {
-  0 : followCenter,
-  1 : followRight,
-  2 : followLeft
-  3 : followGap
-}
+
 # data: single message from topic /scan
 # angle: between 0(far right) to 270 (far left) degrees, where 45 degrees is directly to the right
 # Outputs length in meters to object with angle in lidar scan field of view
@@ -106,15 +101,20 @@ def follow(data, desired_distance, angle):
   return error
 
 def followGap(angle):
-
   return lookDistance*math.sin(angle)
 
+modeEnumMap = dict([
+  (0 , followCenter),
+  (1 , followRight),
+  (2 , followLeft),
+  (3 , followGap)
+])
 
 # Callback for receiving LIDAR data on the /scan topic.
 # data: the LIDAR data, published as a list of distances to the wall.
 
 def scan_callback(data):
-  error = modeEnumMap[currentMode](data)
+  error = modeEnumMap[currentEnumMode](data)
 
   msg = pid_angle_input()
   msg.pid_error = error

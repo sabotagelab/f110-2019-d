@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import rospy
 import queue
 import numpy as np
@@ -9,7 +10,7 @@ class Interface:
         rospy.init_node("follow_turns", anonymous=True)
 
         self.gapSub = rospy.Subscriber("all gaps", Gaps, self.determineInstruction)
-        self.followPub = rospy.Publisher("follow_type", follow_type)
+        self.followPub = rospy.Publisher("follow_type", follow_type, queue_size=5)
 
         self.instructions = {
             "C" : 0,    #followcenter

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import rospy
 from wall_following.msg import pid_angle_input, pid_meta
 
@@ -6,7 +7,7 @@ class Interface:
         rospy.init_node('pid_meta_node', anonymous=True)
 
         self.errSub = rospy.Subscriber("pid_error", pid_angle_input, self.errAvgCallback)
-        self.metaPub = rospy.Publisher("wall_following_analysis", pid_meta)
+        self.metaPub = rospy.Publisher("wall_following_analysis", pid_meta, queue_size=5)
 
         self.pidErrCount = 0
         self.pidErrAvg = 0
