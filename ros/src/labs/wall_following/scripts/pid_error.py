@@ -26,7 +26,7 @@ DESIRED_DISTANCE = .75
 lastSpeed = 1
 
 currentMode = "center"
-currentEnumMode = 1
+currentEnumMode = 0
 currentGapAngle = 0
 modeMap = {
   "center" : 0,
@@ -105,8 +105,8 @@ def followGap(angle):
 
 modeEnumMap = dict([
   (0 , followCenter),
-  (1 , followRight),
-  (2 , followLeft),
+  (1 , followLeft),
+  (2 , followRight),
   (3 , followGap)
 ])
 
