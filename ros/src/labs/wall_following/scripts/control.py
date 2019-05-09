@@ -11,9 +11,9 @@ import time
 
 
 # TODO: modify these constants to make the car follow walls smoothly.
-KP = .05
-KI = .001
-KD = 1
+KP = .008
+KI = .00
+KD = 0
 
 N = 1
 K = .5

@@ -61,7 +61,7 @@ class Interface:
 
         gaps = gradientScan_np(scanData, lidarData)
 
-        linearDistances, centerGap = processGaps(gaps)
+        scores, linearDistances, centerGap = processGaps(gaps)
 
         try:
             #transferQT = self.tfListener.lookupTransform('/map', '/laser', rospy.Time(0))
@@ -83,7 +83,7 @@ class Interface:
             rospy.logerr("Exception transforming centerpoint. Will not publish to /center_point")
             rospy.logerr(e)
 
-        gapsMessage = makeGapsMessage(gaps, linearDistances)
+        gapsMessage = makeGapsMessage(gaps, linearDistances, scores)
 
         self.gapPub.publish(gapsMessage)
 
@@ -108,13 +108,13 @@ def fixAngle(point, scanData):
 
     #return msg
 
-def makeGapsMessage(gaps, linearDistances):
+def makeGapsMessage(gaps, linearDistances, scores):
     features = lambda gap : [gap[0], gap[int(len(gap) / 2)], gap[-1]]
     lidarPoints = [LidarPoint(*point) for gap in gaps for point in features(gap)]
 
     n = 3
     gapGroup = lambda idx, sep : lidarPoints[ (idx * sep) : (idx * sep) + sep ]
-    msg = [ Gap(linearDistances[i], gapGroup(i, n)) for i in xrange(0, len(gaps))]
+    msg = [ Gap(gapGroup(i, n), scores[i], linearDistances[i]) for i in xrange(0, len(gaps))]
 
     return Gaps(msg)
 

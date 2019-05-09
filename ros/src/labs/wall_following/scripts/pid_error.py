@@ -7,6 +7,7 @@ from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Float64
 import pdb
 from wall_following.msg import pid_angle_input, follow_type
+from race.msg import drive_param
 
 pub = rospy.Publisher('pid_error', pid_angle_input, queue_size=10)
 
@@ -19,13 +20,13 @@ THETA = math.pi/32
 
 #estimated delay from command to steady state
 CONTROL_DELAY_ESTIMATE = 0.5
-lookDistance = 1
+lookDistance = 1.5
 DESIRED_DISTANCE = .75
 
 #historical speed, updated continuosly
 lastSpeed = 1
 
-currentMode = "center"
+currentMode = "right"
 currentEnumMode = 1
 currentGapAngle = 0
 modeMap = {
@@ -105,8 +106,8 @@ def followGap(angle):
 
 modeEnumMap = dict([
   (0 , followCenter),
-  (1 , followRight),
-  (2 , followLeft),
+  (1 , followLeft),
+  (2 , followRight),
   (3 , followGap)
 ])
 
@@ -129,10 +130,14 @@ def changeFollowType(data):
   currentEnumMode = data.type
   currentGapAngle = data.gap_angle
 
+def setLookDistance(data):
+  lookDistance = data.velocity
+
 # Boilerplate code to start this ROS node.
 # DO NOT MODIFY!
 if __name__ == '__main__':
   rospy.init_node('pid_error_node', anonymous = True)
   rospy.Subscriber("scan", LaserScan, scan_callback)
   rospy.Subscriber("follow_types", follow_type, changeFollowType)
+  rospy.Subscriber("cmd_vel", drive_param, setLookDistance)
   rospy.spin()

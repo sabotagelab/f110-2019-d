@@ -9,18 +9,18 @@ def processGaps(gaps):
     minimumWidthRatio = 2
     linearDistances = np.asarray(map(processGap, gaps))
     #maxGap = max(gaps, key=lambda gap : np.average(gap))
-    depths = np.array([np.average(g) for g in gaps])
+    scores = np.array([np.average(g) for g in gaps])
+    scores -= np.min(scores)
+    scores *= scores * linearDistances
     wideEnough = np.where(linearDistances > pow(carWidth * minimumWidthRatio, 2))
-    mask = np.ones(len(depths), dtype=int)
+    mask = np.ones(len(scores), dtype=int)
     mask[wideEnough] = 0
 
-    maskedDepths = ma.masked_array(depths, mask=mask)
+    maskedDepths = ma.masked_array(scores, mask=mask)
     maxGap = gaps[maskedDepths.argmax()]
-    
 
 
-
-    return linearDistances, maxGap
+    return scores, linearDistances, maxGap
 
     #deprecated for use with Kmeans 
     #maxGap = max(gaps, key = lambda gap : gap[1][0])

@@ -2,12 +2,13 @@
 import rospy
 import queue
 import numpy as np
+import math
 from wall_following.msg import follow_type
 from pemdas_gap_finding.msg import Gaps
 
 class Interface:
     def __init__(self, instructionFile):
-        rospy.init_node("follow_turns", anonymous=True)
+        rospy.init_node("follow_turns_node", anonymous=True)
 
         self.gapSub = rospy.Subscriber("all gaps", Gaps, self.determineInstruction)
         self.followPub = rospy.Publisher("follow_type", follow_type, queue_size=5)
@@ -27,7 +28,9 @@ class Interface:
         self.newInstructionGapCountThresh = 1   
 
         self.defaultInstruction= "C"
+        self.defaultInstructionEnum = self.instructions[self.defaultInstruction]
         self.currentInstruction = None
+        self.currentInstructionEnum = None
 
         self.instructionQueue = queue.Queue()
         self.loadInstructions(instructionFile)
@@ -38,14 +41,20 @@ class Interface:
     def loadInstructions(self, file):
         with open(file, "r") as instructionData:
             instructionString = instructionData.readLine()
+            count = 1
             for inst in instructionString:
                 self.instructionQueue.put(inst)
+                print("Loaded instruction {}: {}".format(count, inst))
+                count += 1
 
     def determineInstruction(self, data):
         if self.countGoodGaps(data.gaps) > self.newInstructionGapCountThresh:
-            if self.currentInstruction != None:
+            if self.currentInstruction == None:
                 self.currentInstruction = self.instructionQueue.get()
-            self.follow()
+                self.currentInstructionEnum = self.instructions[self.currentInstruction]
+            self.follow(self.currentInstruction)
+            if self.currentInstructionEnum == 3: #only if following gap
+                self.followGapAngle = self.findHeadingGapAngle(data.gaps)
         else:
             self.follow(self.defaultInstruction)
             self.currentInstruction = None
@@ -54,16 +63,28 @@ class Interface:
     def countGoodGaps(self, gaps):
         mean = np.mean(gaps.scores)
         std = np.std(gaps.scores)
-        thresh = mean + (std * self.goodGapThesholdFactor)
+        thresh = mean + (std * self.goodGapThresholdFactor)
 
         criticalGaps = np.argwhere(gaps.scores > thresh)
 
         return len(criticalGaps)
 
-    def findHeadingGap(self, gaps):
-        return #the gap with heading closest to 135
+    #the center angle of the gap with heading closest to 135 (lidar forward)
+    def findHeadingGapAngle(self, gaps):
+        centerAngle = lambda g : g.features[len(g.features)//2].angle
+        forwardHeading = np.deg2rad(135)
 
-    def follow(self, instruction=self.currentInstruction):
+        bestGap = None
+        bestError = 2*math.pi #cannot be off by a full circle!!!
+        for gap in gaps[1:]:
+            error = abs(centerAngle(gap) - forwardHeading)
+            if error < bestError:
+                bestError = error 
+                bestGap = gap
+        
+        return centerAngle(bestGap)
+
+    def follow(self, instruction):
         msg = follow_type()
         msg.type = self.instructions[instruction]
         msg.gap_angle = self.followGapAngle
