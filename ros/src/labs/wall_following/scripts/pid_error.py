@@ -16,7 +16,7 @@ MIN_DISTANCE = 0.1
 MAX_DISTANCE = 30.0
 MIN_ANGLE = 0
 MAX_ANGLE = 3*math.pi/2
-THETA = math.pi/32
+THETA = math.pi/16
 
 #estimated delay from command to steady state
 CONTROL_DELAY_ESTIMATE = 0.5

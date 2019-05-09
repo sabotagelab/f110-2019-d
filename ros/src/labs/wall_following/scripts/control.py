@@ -11,9 +11,9 @@ import time
 
 
 # TODO: modify these constants to make the car follow walls smoothly.
-KP = .005
+KP = .03
 KI = .00
-KD = .001
+KD = .000
 
 #KP = .1 
 #KI = 0
@@ -25,8 +25,8 @@ weightFunc = lambda x : N*math.exp(-K*x)
 
 SPD_DEC_ANGLE_PERIOD = np.deg2rad(10)
 SPD_DEC_ANGLE_MAX = np.deg2rad(20)
-MAX_VEL = 4.5 #m/s
-MIN_VEL = 3 
+MAX_VEL = 1.5 #m/s
+MIN_VEL = .5
 
 A = .5 #top of decrease
 B = 0 #bottom of decrease
@@ -76,14 +76,18 @@ class Interface:
 		#return np.average(np.gradient(err), weights=self.weights)
 	
 	def integralError(self, error):
+		return pow((self.currentTime - self.lastTime), 2) * error
+
+	def proportionError(self, error):
 		return (self.currentTime - self.lastTime) * error
 	
 	def angleMaxVelocity(self, angle):
 		#avgAngle = abs(np.average(np.asarray(self.angleWindow))) #sign does not matter since we are only determining speed
 		avgAngle = min(abs(angle), SPD_DEC_ANGLE_MAX)
-		angleStepDecrease = (int(avgAngle / SPD_DEC_ANGLE_PERIOD)) * A
-		angleRemainderInc = angleLimitFunc(np.rad2deg(avgAngle % SPD_DEC_ANGLE_PERIOD))
-		return MAX_VEL - MIN_VEL - angleStepDecrease + angleRemainderInc
+		#angleStepDecrease = (int(avgAngle / SPD_DEC_ANGLE_PERIOD)) * A
+		#angleRemainderInc = angleLimitFunc(np.rad2deg(avgAngle % SPD_DEC_ANGLE_PERIOD))
+		#return MAX_VEL - MIN_VEL - angleStepDecrease + angleRemainderInc
+		return (avgAngle)/(SPD_DEC_ANGLE_MAX)*(MAX_VEL-MIN_VEL) + MIN_VEL
 
 	def control_callback(self, data):
 		#calculate frame time
@@ -97,7 +101,7 @@ class Interface:
 		self.etInt += self.integralError(et)
 
 		#weighted pid equation for angle increment
-		ut = KP * et + KI * self.etInt + KD * self.derivativeError(et)
+		ut = KP * self.proportionError(et) + KI * self.etInt + KD * self.derivativeError(et)
 		self.angle += ut #* (self.currentTime - self.lastTime)
 		if np.isnan(self.angle):
 			self.angle = np.nanmean(self.angleWindow)
