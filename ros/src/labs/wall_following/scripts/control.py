@@ -11,9 +11,13 @@ import time
 
 
 # TODO: modify these constants to make the car follow walls smoothly.
-KP = .008
+KP = .005
 KI = .00
-KD = 0
+KD = .001
+
+#KP = .1 
+#KI = 0
+#KD = 0.01
 
 N = 1
 K = .5
@@ -21,8 +25,8 @@ weightFunc = lambda x : N*math.exp(-K*x)
 
 SPD_DEC_ANGLE_PERIOD = np.deg2rad(10)
 SPD_DEC_ANGLE_MAX = np.deg2rad(20)
-MAX_VEL = 1.5 #m/s
-MIN_VEL = .5
+MAX_VEL = 4.5 #m/s
+MIN_VEL = 3 
 
 A = .5 #top of decrease
 B = 0 #bottom of decrease

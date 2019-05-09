@@ -18,14 +18,14 @@ class Interface:
             "R" : 1,    #followright
             "L" : 2,    #followleft
             "S" : 3,    #follow straight (gap)
-            "I" : 3 
+            "I" : 3
         }
 
         #standard deviations to use for deciding if a gap is "significant"
         self.goodGapThresholdFactor = 2
 
         #how many "significant" gaps will trigger advance to next instruction
-        self.newInstructionGapCountThresh = 1   
+        self.newInstructionGapCountThresh = 1
 
         self.defaultInstruction= "C"
         self.defaultInstructionEnum = self.instructions[self.defaultInstruction]
@@ -33,8 +33,8 @@ class Interface:
         self.currentInstructionEnum = None
 
         self.instructionQueue = queue.Queue()
-        self.loadInstructions(instructionFile)
-    
+        self.loadInstructions('/labs/wall_following/explicit_instructions/instructions.txt')
+
     def start(self):
         rospy.spin()
 
@@ -59,7 +59,7 @@ class Interface:
             self.follow(self.defaultInstruction)
             self.currentInstruction = None
 
-    
+
     def countGoodGaps(self, gaps):
         mean = np.mean(gaps.scores)
         std = np.std(gaps.scores)
