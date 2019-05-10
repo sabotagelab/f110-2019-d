@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-
 import rospy
 from race.msg import drive_param
 from std_msgs.msg import Float64
@@ -24,8 +23,6 @@ KD = 1.000
 
 with open (filepath, 'r') as f:
 	doc = yaml.load(f)
-
-
 
 KP = doc["control"]["KP"]
 KI = doc["control"]["KI"]
