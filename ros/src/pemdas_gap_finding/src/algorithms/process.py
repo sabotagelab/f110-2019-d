@@ -66,10 +66,9 @@ def filterRanges(lidarMessage, coe=1.1):
         if last != None:
             nanchunks.append((last, size))
 
-    
         chunkStart = 0
         for c in nanchunks:
-            inc = (data[c[0]-1] - data[c[0]+c[1]]) / c[1]
+            inc = (data[c[0]-1] - data[c[0]+c[1]]-1) / c[1]
             for i in xrange(chunkStart, chunkStart+c[1]):
                 data[nanidx[i]] = data[c[0]-1] + (i-chunkStart) * inc
             chunkStart += c[1]
