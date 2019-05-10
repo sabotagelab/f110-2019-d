@@ -5,12 +5,12 @@ pid_error:
   lookDistance: 2
   DESIRED_DISTANCE: 1
   currentMode: "left"
-  currentEnumMode: 2
+  currentEnumMode: 1
   currentGapAngle: 0
 
 control:
-  KP: 0.02
+  KP: 0.01
   KI: 0.000
-  KD: 0.02
+  KD: 0.01
   N: 1
   K: 0.5

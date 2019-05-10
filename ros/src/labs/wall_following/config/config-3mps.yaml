@@ -5,7 +5,7 @@ pid_error:
   lookDistance: 2
   DESIRED_DISTANCE: 1
   currentMode: "left"
-  currentEnumMode: 2
+  currentEnumMode: 1
   currentGapAngle: 0
 
 control:
