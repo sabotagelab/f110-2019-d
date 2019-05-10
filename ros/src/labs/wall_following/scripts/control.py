@@ -12,9 +12,9 @@ import sys
 
 
 # TODO: modify these constants to make the car follow walls smoothly.
-KP = .05
+KP =  1.7
 KI = .0001
-KD = .000
+KD = 1.000
 
 N = 1
 K = .5
@@ -75,7 +75,7 @@ class Interface:
 		self.storeQ(self.angleWindow, elem)
 	
 	def derivativeError(self, error):
-		return (error - self.lastError) / (self.currentTime - self.lastTime)
+		return (error - self.lastError) #/ (self.currentTime - self.lastTime)
 		#err = np.asarray(self.errorWindow)
 		#return np.average(np.gradient(err), weights=self.weights)
 	

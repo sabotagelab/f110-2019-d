@@ -25,6 +25,7 @@ DESIRED_DISTANCE = .75
 
 #historical speed, updated continuosly
 lastSpeed = 1
+currentRanges = []
 
 currentMode = "right"
 currentEnumMode = 1
@@ -36,6 +37,37 @@ modeMap = {
   "gap" : 3
 }
 
+def filterRanges(lidarMessage, coe=1.1):
+    from scipy.signal import savgol_filter
+    data = np.array(lidarMessage.ranges)
+    data[np.isinf(data)] = lidarMessage.range_max * coe
+    #data[np.isnan(data)] = lidarMessage.range_max * coe
+
+    nanidx = np.where(np.isnan(data))[0]
+    if len(nanidx):
+        nanchunks = []
+        last = nanidx[0]
+        size = 1
+        for ri in xrange(1, len(nanidx)):
+            if nanidx[ri] - last != 1:
+                nanchunks.append((last, size))
+                last = nanidx[ri].tolist()
+                size = 1
+            else:
+                size += 1
+        if last != None:
+            nanchunks.append((last, size))
+
+    
+        chunkStart = 0
+        for c in nanchunks:
+            inc = (data[c[0]-1] - data[c[0]+c[1]]) / c[1]
+            for i in xrange(chunkStart, chunkStart+c[1]):
+                data[nanidx[i]] = data[c[0]-1] + (i-chunkStart) * inc
+            chunkStart += c[1]
+
+    data = savgol_filter(data.tolist(), 11, 3)
+    return data 
 
 # data: single message from topic /scan
 # angle: between 0(far right) to 270 (far left) degrees, where 45 degrees is directly to the right
@@ -43,8 +75,8 @@ modeMap = {
 def getRange(data, angle):
   inc = data.angle_increment
   index = int(angle / inc)
-  index = np.clip(index, 0, len(data.ranges)-1)
-  return data.ranges[index]
+  index = np.clip(index, 0, len(currentRanges)-1)
+  return currentRanges[index]
 
 # data: single message from topic /scan
 # desired_distance: desired distance to the left wall [meters]
@@ -115,6 +147,7 @@ modeEnumMap = dict([
 # data: the LIDAR data, published as a list of distances to the wall.
 
 def scan_callback(data):
+  currentRanges = filterRanges(data)
   error = modeEnumMap[currentEnumMode](data)
 
   msg = pid_angle_input()
