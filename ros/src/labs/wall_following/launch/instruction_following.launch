@@ -3,16 +3,18 @@
 <launch>
   <arg name="gui" default="true"/>
   <arg name="live" default="true"/>
+  <arg name="onboard" default="false"/>
+  <arg name="config" default="config/default.yaml"/>
+
   <include file="$(find racecar_gazebo)/launch/racecar.launch">
-	<arg name="world_name" value="track_levine"/>
-	<arg name="gui" value="$(arg gui)"/>
+    <arg name="world_name" value="track_levine"/>
+    <arg name="gui" value="$(arg gui)"/>
   </include>
 
-  # output="screen" allows us to see print statements
   <node pkg="wall_following" name="pid_error_node" type="pid_error.py" output="screen" if="$(arg live)"/> 
-  <node pkg="wall_following" name="control_node" type="control.py" output="screen" if="$(arg live)"/>
+  <node pkg="wall_following" name="control_node" type="control.py" output="screen" if="$(arg live)" args="$(arg config) $(arg onboard)"/>
   <node pkg="wall_following" name="sim_connector_node" type="sim_connector.py" output="screen" if="$(arg live)"/>
-  <node pkg="wall_following" name="follow_turns_node" type="follow_turns.py" output="screen" if="$(arg live)">
+  <node pkg="wall_following" name="follow_turns_node" type="follow_turns.py" output="screen" if="$(arg live)"/>
   <node pkg="pemdas_gap_finding" name="pemdas_gap_finding" type="find_gap.py" output="screen" if="$(arg live)"/>
 
 </launch>

@@ -5,23 +5,34 @@ import rospy
 from race.msg import drive_param
 from std_msgs.msg import Float64
 from wall_following.msg import pid_angle_input
-from collections import deque 
+from collections import deque
 import numpy as np
 import math
 import time
+import yaml
+import os
+import sys
 
+dirname = os.path.dirname(__file__)
+filepath = os.path.join(dirname, '../config/config.yaml')
+#print(filepath)
 
 # TODO: modify these constants to make the car follow walls smoothly.
-KP = 1
-KI = 0
-KD = 0.01
+KP =  1.7
+KI = .0001
+KD = 1.000
 
-#KP = .1 
-#KI = 0
-#KD = 0.01
+with open (filepath, 'r') as f:
+	doc = yaml.load(f)
 
-N = 1
-K = .5
+
+
+KP = doc["control"]["KP"]
+KI = doc["control"]["KI"]
+KD = doc["control"]["KD"]
+
+N = doc["control"]["N"]
+K = doc["control"]["K"]
 weightFunc = lambda x : N*math.exp(-K*x)
 
 SPD_DEC_ANGLE_PERIOD = np.deg2rad(10)
@@ -57,6 +68,13 @@ class Interface:
 		self.lastAngle = 0
 		self.lastError = 0
 
+		if len(sys.argv) > 1:
+			self.configFile = sys.argv[1]
+
+		self.velocityMultiple = 1
+		if len(sys.argv) > 2 and sys.argv[2] == "true":
+			self.velocityMultiple = -1
+
 	def start(self):
 		rospy.spin()
 
@@ -64,31 +82,31 @@ class Interface:
 		if not len(q) < q.maxlen:
 			q.pop()
 		q.appendleft(elem)
-	
+
 	def storeError(self, elem):
 		self.storeQ(self.errorWindow, elem)
-	
+
 	def storeAngle(self, elem):
 		self.storeQ(self.angleWindow, elem)
-	
+
 	def derivativeError(self, error):
-		return (error - self.lastError) / (self.currentTime - self.lastTime)
+		return (error - self.lastError) #/ (self.currentTime - self.lastTime)
 		#err = np.asarray(self.errorWindow)
 		#return np.average(np.gradient(err), weights=self.weights)
-	
+
 	def integralError(self, error):
 		return (self.currentTime - self.lastTime) * error
 
 	def proportionError(self, error):
-		return (self.currentTime - self.lastTime) * error
-	
+		return error
+
 	def angleMaxVelocity(self, angle):
 		#avgAngle = abs(np.average(np.asarray(self.angleWindow))) #sign does not matter since we are only determining speed
 		avgAngle = min(abs(angle), SPD_DEC_ANGLE_MAX)
 		#angleStepDecrease = (int(avgAngle / SPD_DEC_ANGLE_PERIOD)) * A
 		#angleRemainderInc = angleLimitFunc(np.rad2deg(avgAngle % SPD_DEC_ANGLE_PERIOD))
 		#return MAX_VEL - MIN_VEL - angleStepDecrease + angleRemainderInc
-		return (SPD_DEC_ANGLE_MAX-avgAngle)/(SPD_DEC_ANGLE_MAX)*(MAX_VEL-MIN_VEL) + MIN_VEL
+		return (SPD_DEC_ANGLE_MAX - avgAngle)/(SPD_DEC_ANGLE_MAX)*(MAX_VEL-MIN_VEL) + MIN_VEL
 
 	def control_callback(self, data):
 		#calculate frame time
@@ -115,7 +133,7 @@ class Interface:
 
 		msg = drive_param()
 		msg.angle = self.angle    # TODO: implement PID for steering angle
-		msg.velocity = -self.angleMaxVelocity(self.angle)  # TODO: implement PID for velocity
+		msg.velocity = self.angleMaxVelocity(self.angle) * self.velocityMultiple # TODO: implement PID for velocity
 		print("ERROR: ", et)
 		print("ANGLE: ", np.rad2deg(self.angle))
 		#print("VEL: ", msg.velocity)
@@ -126,4 +144,3 @@ class Interface:
 if __name__ == '__main__':
 	iface = Interface(10, 5)
 	iface.start()
-

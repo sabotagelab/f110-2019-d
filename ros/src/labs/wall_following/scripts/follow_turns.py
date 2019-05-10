@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 import rospy
-import queue
 import numpy as np
 import math
+import Queue as queue
 from wall_following.msg import follow_type
 from pemdas_gap_finding.msg import Gaps
+import os
 
 class Interface:
     def __init__(self, instructionFile):
         rospy.init_node("follow_turns_node", anonymous=True)
 
-        self.gapSub = rospy.Subscriber("all gaps", Gaps, self.determineInstruction)
+        self.gapSub = rospy.Subscriber("lidar_gaps", Gaps, self.determineInstruction)
         self.followPub = rospy.Publisher("follow_type", follow_type, queue_size=5)
 
         self.instructions = {
@@ -33,7 +34,9 @@ class Interface:
         self.currentInstructionEnum = None
 
         self.instructionQueue = queue.Queue()
-        self.loadInstructions('/labs/wall_following/explicit_instructions/instructions.txt')
+
+        os.path.join(os.path.dirname(__file__))
+        self.loadInstructions('../explicit_instructions/levine_instructions.dat')
 
     def start(self):
         rospy.spin()

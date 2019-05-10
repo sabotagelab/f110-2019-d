@@ -7,26 +7,36 @@ from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Float64
 import pdb
 from wall_following.msg import pid_angle_input, follow_type
+import yaml
+import os
 from race.msg import drive_param
 
 pub = rospy.Publisher('pid_error', pid_angle_input, queue_size=10)
 
+dirname = os.path.dirname(__file__)
+filepath = os.path.join(dirname, '../config/config.yaml')
+with open (filepath, 'r') as f:
+	doc = yaml.load(f)
+
+
+
 # You can define constants in Python as uppercase global names like these.
-MIN_DISTANCE = 0.1
-MAX_DISTANCE = 30.0
+MIN_DISTANCE = doc["pid_error"]["MIN_DISTANCE"]
+MAX_DISTANCE = doc["pid_error"]["MAX_DISTANCE"]
 MIN_ANGLE = 0
 MAX_ANGLE = 3*math.pi/2
 THETA = math.pi/16
 
 #estimated delay from command to steady state
-CONTROL_DELAY_ESTIMATE = 0.5
-lookDistance = 1.5
-DESIRED_DISTANCE = .25
 
 currentRanges = [1] * 2000
+CONTROL_DELAY_ESTIMATE = doc["pid_error"]["CONTROL_DELAY_ESTIMATE"]
+lookDistance = doc["pid_error"]["lookDistance"]
+DESIRED_DISTANCE = doc["pid_error"]["DESIRED_DISTANCE"]
 
 #historical speed, updated continuosly
 lastSpeed = 1
+currentRanges = []
 
 def filterRanges(lidarMessage, coe=1.1):
     from scipy.signal import savgol_filter
@@ -60,9 +70,9 @@ def filterRanges(lidarMessage, coe=1.1):
     data = savgol_filter(data.tolist(), 11, 3)
     return data 
 
-currentMode = "left"
-currentEnumMode = 2
-currentGapAngle = 0
+currentMode = doc["pid_error"]["currentMode"]
+currentEnumMode = doc["pid_error"]["currentEnumMode"]
+currentGapAngle = doc["pid_error"]["currentGapAngle"]
 modeMap = {
   "center" : 0,
   "left" : 1,
@@ -70,6 +80,37 @@ modeMap = {
   "gap" : 3
 }
 
+def filterRanges(lidarMessage, coe=1.1):
+    from scipy.signal import savgol_filter
+    data = np.array(lidarMessage.ranges)
+    data[np.isinf(data)] = lidarMessage.range_max * coe
+    #data[np.isnan(data)] = lidarMessage.range_max * coe
+
+    nanidx = np.where(np.isnan(data))[0]
+    if len(nanidx):
+        nanchunks = []
+        last = nanidx[0]
+        size = 1
+        for ri in xrange(1, len(nanidx)):
+            if nanidx[ri] - last != 1:
+                nanchunks.append((last, size))
+                last = nanidx[ri].tolist()
+                size = 1
+            else:
+                size += 1
+        if last != None:
+            nanchunks.append((last, size))
+
+    
+        chunkStart = 0
+        for c in nanchunks:
+            inc = (data[c[0]-1] - data[c[0]+c[1]]) / c[1]
+            for i in xrange(chunkStart, chunkStart+c[1]):
+                data[nanidx[i]] = data[c[0]-1] + (i-chunkStart) * inc
+            chunkStart += c[1]
+
+    data = savgol_filter(data.tolist(), 11, 3)
+    return data 
 
 # data: single message from topic /scan
 # angle: between 0(far right) to 270 (far left) degrees, where 45 degrees is directly to the right
@@ -78,7 +119,6 @@ def getRange(data, angle):
   inc = data.angle_increment
   index = int(angle / inc)
   index = np.clip(index, 0, len(currentRanges)-1)
-  print(index)
   return currentRanges[index]
 
 # data: single message from topic /scan
@@ -151,8 +191,6 @@ modeEnumMap = dict([
 
 def scan_callback(data):
   currentRanges = filterRanges(data)
-#  print(len(data.ranges))
-  #print(len(currentRanges))
   error = modeEnumMap[currentEnumMode](data)
 #  if error == 0:
 #    print(currentRanges)
