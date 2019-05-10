@@ -1,0 +1,16 @@
+pid_error:
+  MIN_DISTANCE: 0.1
+  MAX_DISTANCE: 30.0
+  CONTROL_DELAY_ESTIMATE: 0.5
+  lookDistance: 2
+  DESIRED_DISTANCE: .75
+  currentMode: "center"
+  currentEnumMode: 0
+  currentGapAngle: 0
+
+control:
+  KP: 0.1
+  KI: 0
+  KD: 0.01
+  N: 1
+  K: 0.5

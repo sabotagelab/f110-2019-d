@@ -10,18 +10,17 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   vesc_msgs
-  message_generation
-  genmsg
 )
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-  DEPENDENCIES
-  std_msgs
-)
+#generate_messages(
+#  DEPENDENCIES
+#  std_msgs
+#  vesc_msgs
+#)
 
 catkin_package(
-   CATKIN_DEPENDS message_runtime vesc_msgs
+   CATKIN_DEPENDS std_msgs vesc_msgs
 )
 
 include_directories(
@@ -31,4 +30,4 @@ include_directories(
 
 add_executable(pemdas_average_vesc src/pemdas_average_vesc.cpp)
 target_link_libraries(pemdas_average_vesc ${catkin_LIBRARIES})
-
+add_dependencies(pemdas_average_vesc ${catkin_EXPORTED_TARGETS})

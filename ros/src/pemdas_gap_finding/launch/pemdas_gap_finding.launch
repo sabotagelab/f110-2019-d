@@ -1,0 +1,16 @@
+<!-- -*- mode: XML -*- -->
+<launch>
+  <node pkg="pemdas_gap_finding" type="find_gap.py" name="pemdasGapFinding" />
+  <node pkg="gap_finding" type="visualize_gap_finding.py" name="visualize_gaps" />
+  <node pkg="rviz" type="rviz" name="rviz" />
+
+  <arg name="racecar_version" default="racecar-v2" />
+  <arg name="run_camera" default="false"/>
+
+
+  <include file="$(find racecar)/launch/includes/$(arg racecar_version)-teleop.launch.xml">
+    <arg name="racecar_version" value="$(arg racecar_version)" />
+    <arg name="run_camera" value="$(arg run_camera)" />
+  </include>
+
+</launch>
