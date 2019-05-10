@@ -130,7 +130,7 @@ class Interface:
 
 		msg = drive_param()
 		msg.angle = self.angle    # TODO: implement PID for steering angle
-		msg.velocity = self.angleMaxVelocity(self.angle) * self.velocityMultiple # TODO: implement PID for velocity
+		msg.velocity = -self.angleMaxVelocity(self.angle) * self.velocityMultiple # TODO: implement PID for velocity
 		print("ERROR: ", et)
 		print("ANGLE: ", np.rad2deg(self.angle))
 		#print("VEL: ", msg.velocity)
