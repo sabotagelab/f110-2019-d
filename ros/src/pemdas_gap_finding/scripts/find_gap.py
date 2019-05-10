@@ -113,9 +113,8 @@ def makeGapsMessage(gaps, linearDistances, scores):
 
     n = 3
     gapGroup = lambda idx, sep : lidarPoints[ (idx * sep) : (idx * sep) + sep ]
-    msg = [ Gap(gapGroup(i, n), scores[i], linearDistances[i]) for i in xrange(0, len(gaps))]
-
-    return Gaps(msg)
+    features = [Gap([LidarPoint(*f) for f in features(gap)]) for gap in gaps]
+    return Gaps(features, linearDistances, scores)
 
 if __name__ == "__main__":
     try:

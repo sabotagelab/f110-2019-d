@@ -27,5 +27,5 @@ instruction:
   newInstructionGapCount: 1
   defaultInstruction: C
   instructionDirectory: '../explicit_instructions/'
-  instructionFile: 'levine_instruction.dat'
+  instructionFile: 'levine_instructions.dat'
   

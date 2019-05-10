@@ -39,11 +39,13 @@ class Interface:
         self.defaultInstructionEnum = self.instructions[self.defaultInstruction]
         self.currentInstruction = None
         self.currentInstructionEnum = None
+	self.followGapAngle = 0
 
         self.instructionQueue = queue.Queue()
 
 
-        self.instructionFile = os.path.join(os.path.dirname(__file__), self.instructionDir + self.instructionFile)
+        self.instructionFile = os.path.join(os.path.dirname(__file__), (self.instructionDir + self.instructionFile))
+        print("loading explicit instructions from {}".format(self.instructionFile)) 
         self.loadInstructions(self.instructionFile)
 
     def loadConfig(self):
@@ -73,7 +75,7 @@ class Interface:
 
     def loadInstructions(self, file):
         with open(file, "r") as instructionData:
-            instructionString = instructionData.readLine()
+            instructionString = instructionData.readline()
             count = 1
             for inst in instructionString:
                 self.instructionQueue.put(inst)
@@ -81,7 +83,7 @@ class Interface:
                 count += 1
 
     def determineInstruction(self, data):
-        if self.countGoodGaps(data.gaps) > self.newInstructionGapCountThresh:
+        if self.countGoodGaps(data) > self.newInstructionGapCountThresh:
             if self.currentInstruction == None:
                 self.currentInstruction = self.instructionQueue.get()
                 self.currentInstructionEnum = self.instructions[self.currentInstruction]
@@ -104,7 +106,7 @@ class Interface:
 
     #the center angle of the gap with heading closest to 135 (lidar forward)
     def findHeadingGapAngle(self, gaps):
-        centerAngle = lambda g : g.features[len(g.features)//2].angle
+        centerAngle = lambda g : g.points[1].angle
 
         bestGap = None
         bestError = 2*math.pi #cannot be off by a full circle!!!
