@@ -15,6 +15,7 @@
     <arg name="gui" value="$(arg gui)" unless="$(arg onboard)"/>
   </include>
 
+  <node pkg="lidar_filtering" name="lidar_filtering_node" type="lidarScan.py" output="screen"/>
   <node pkg="wall_following" name="pid_error_node" type="pid_error.py" output="screen" args="$(arg config)"/> 
   <node pkg="wall_following" name="control_node" type="control.py" output="screen" args="$(arg config) $(arg onboard)"/>
 

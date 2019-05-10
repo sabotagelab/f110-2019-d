@@ -5,10 +5,11 @@ import math
 import Queue as queue
 from wall_following.msg import follow_type
 from pemdas_gap_finding.msg import Gaps
-import os
+import os, sys
+import yaml
 
 class Interface:
-    def __init__(self, instructionFile):
+    def __init__(self):
         rospy.init_node("follow_turns_node", anonymous=True)
 
         self.gapSub = rospy.Subscriber("lidar_gaps", Gaps, self.determineInstruction)
@@ -30,15 +31,44 @@ class Interface:
         self.forwardHeading = np.deg2rad(135)
 
         self.defaultInstruction= "C"
+        self.instructionDir = "../explicit_instructions/"
+        self.instructionFile = "levine_instructions.dat"
+
+        self.loadConfig()
+
         self.defaultInstructionEnum = self.instructions[self.defaultInstruction]
         self.currentInstruction = None
         self.currentInstructionEnum = None
 
         self.instructionQueue = queue.Queue()
 
-        self.instructionFile = "../explicit_instructions/levine_instructions.dat"
-        self.instructionFile = os.path.join(os.path.dirname(__file__), self.instructionFile)
+
+        self.instructionFile = os.path.join(os.path.dirname(__file__), self.instructionDir + self.instructionFile)
         self.loadInstructions(self.instructionFile)
+
+    def loadConfig(self):
+        configFile = "config.yaml"
+        if len(sys.argv) > 1:
+            configFile = sys.argv[1]
+        dirname = os.path.dirname(__file__)
+        filepath = os.path.join(dirname, '../config/' + configFile)
+
+        with open (filepath, 'r') as f:
+            doc = yaml.load(f)
+            doc = doc["instruction"]
+
+        if "goodGapThresh" in doc:
+            self.goodGapThresholdFactor = doc["goodGapThresh"]
+        if "newInstructionGapCount" in doc:
+            self.newInstructionGapCountThresh = doc["newInstructionGapCount"]
+        if "defaultInstruction" in doc:
+            self.defaultInstruction = doc["defaultInstruction"]
+        if "instructionDirectory" in doc:
+            self.instructionDir = doc["instructionDirectory"]
+        if "instructionFile" in doc:
+            self.instructionFile = doc["instructionFile"]
+        
+
 
     def start(self):
         rospy.spin()
@@ -96,5 +126,5 @@ class Interface:
 
 
 if __name__ == "__main__":
-    iface = Interface("config/levineInstruction.dat")
+    iface = Interface()
     iface.start()
