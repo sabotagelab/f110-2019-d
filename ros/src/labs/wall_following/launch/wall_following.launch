@@ -1,19 +1,29 @@
 <?xml version="1.0"?>
-
 <launch>
+
   <arg name="gui" default="true"/>
   <arg name="live" default="true"/>
   <arg name="onboard" default="false"/>
+  <arg name="instruction" default="false"/>
+
+  <arg name="visualize" default="false"/>
   <arg name="config" default="config/default.yaml"/>
 
-  <include file="$(find racecar_gazebo)/launch/racecar.launch">
-    <arg name="world_name" value="track_levine"/>
-    <arg name="gui" value="$(arg gui)"/>
+  <include file="$(find racecar)/launch/teleop.launch" if="$(arg onboard)"/>
+  <include file="$(find racecar_gazebo)/launch/racecar.launch" unless="$(arg onboard)">
+    <arg name="world_name" value="track_levine" unless="$(arg onboard)"/>
+    <arg name="gui" value="$(arg gui)" unless="$(arg onboard)"/>
   </include>
 
-  <node pkg="wall_following" name="pid_error_node" type="pid_error.py" output="screen" if="$(arg live)"/> 
-  <node pkg="wall_following" name="control_node" type="control.py" output="screen" if="$(arg live)" args="$(arg config) $(arg onboard)"/>
-  <node pkg="wall_following" name="sim_connector_node" type="sim_connector.py" output="screen" if="$(arg live)"/>
-  <node pkg="wall_following" name="pid_meta_node" type="pemdas_analysis.py" output="screen" if="$(arg live)"/>
+  <node pkg="wall_following" name="pid_error_node" type="pid_error.py" output="screen"/> 
+  <node pkg="wall_following" name="control_node" type="control.py" output="screen" args="$(arg config) $(arg onboard)"/>
+
+  <node pkg="wall_following" name="sim_connector_node" type="sim_connector.py" output="screen" unless="$(arg onboard)"/>
+  <node pkg="wall_following" name="dead_mans_switch" type="dead_mans_switch.py" output="screen" if="$(arg onboard)"/>
+
+  <node pkg="wall_following" name="pid_meta_node" type="pemdas_analysis.py" output="screen" unless="$(arg onboard)"/> 
+
+  <node pkg="wall_following" name="follow_turns_node" type="follow_turns.py" output="screen" if="$(arg instruction)"/>
+  <node pkg="pemdas_gap_finding" name="pemdas_gap_finding" type="find_gap.py" output="screen" if="$(arg instruction)"/>
 
 </launch>
