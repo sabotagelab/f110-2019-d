@@ -64,8 +64,8 @@ def getData(msg):
     #data = np.nan_to_num(data)
     return(data)
 
-def gradientScan_np(scan, data, z=2, coe=1.1):
-    jerk = np.absolute(np.diff(np.diff(data)))
+def gradientScan_np(scan, z=2, coe=1.1):
+    jerk = np.absolute(np.diff(np.diff(scan.ranges)))
 
     mean = np.mean(jerk)
     std = np.std(jerk)
@@ -83,7 +83,7 @@ def gradientScan_np(scan, data, z=2, coe=1.1):
     angles = [scan.angle_increment*i for i in xrange(len(scan.ranges))]
     lastSpike = 0
     for spike in spikes:
-        gaps.append(zip(data[lastSpike:spike], angles[lastSpike:spike]))
+        gaps.append(zip(scan.ranges[lastSpike:spike], angles[lastSpike:spike]))
         lastSpike = spike
 
     return gaps

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import rospy
 from sensor_msgs.msg import LaserScan
 import numpy as np
@@ -9,14 +10,18 @@ class Interface:
         rospy.Subscriber("scan", LaserScan, self.filterScanData)
         self.filterScanPub = rospy.Publisher ("filter_scan", LaserScan, queue_size = 1)
 
+    def start(self):
+        rospy.spin()
+
     def filterScanData(self, data):
-        self.lidarScan = data.ranges
+        self.lidarScan = data
         newRanges = self.filterRanges()
 
         msg = LaserScan()
         msg.header = data.header
         msg.angle_min = data.angle_min
-        msg.angle_max = data.angle_increment
+        msg.angle_max = data.angle_max
+        msg.angle_increment = data.angle_increment
         msg.time_increment = data.time_increment
         msg.scan_time = data.scan_time
         msg.range_min = data.range_min
@@ -67,3 +72,7 @@ class Interface:
 
       data = savgol_filter(data.tolist(), 11, 3)
       return data
+
+if __name__ == "__main__":
+    iface = Interface()
+    iface.start()

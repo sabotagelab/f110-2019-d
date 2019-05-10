@@ -48,8 +48,6 @@ class Interface:
 
     def loadConfig(self):
         configFile = "config.yaml"
-        if len(sys.argv) > 1:
-            configFile = sys.argv[1]
         dirname = os.path.dirname(__file__)
         filepath = os.path.join(dirname, '../config/' + configFile)
 

@@ -11,7 +11,7 @@ import time
 
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(sys.path[0]), 'src'))
-from algorithms import processGaps, globalizePoint 
+from algorithms import processGaps, globalizePoint, gradientScan_np
 
 PUBLISH_GAP_POINTS = False
 if PUBLISH_GAP_POINTS:
@@ -58,7 +58,7 @@ class Interface:
         #avgData = np.average(np.asarray(self.lidarWindow), weights=self.lidarHistoryGradient)
 
 
-        gaps = gradientScan_np(lidarData, lidarData)
+        gaps = gradientScan_np(lidarData)
 
         scores, linearDistances, centerGap = processGaps(gaps)
 
@@ -74,7 +74,7 @@ class Interface:
                         gapPoints.points.append(Point(*globalizePoint(fixAngle(point, scanData), *transferQT)))
                 self.gapPointsPub.publish(gapPoints)
 
-            centerPoint = fixAngle(centerGap[int(len(centerGap) / 2)], scanData)
+            centerPoint = fixAngle(centerGap[int(len(centerGap) / 2)], lidarData)
             centerPoint = globalizePoint(centerPoint)
             centerPointMessage = Point(*centerPoint)
             self.pointPub.publish(centerPointMessage)

@@ -111,8 +111,8 @@ class Interface:
   def getRange(self, angle):
     inc = self.filterScan.angle_increment
     index = int(angle / inc)
-    index = np.clip(index, 0, len(self.filterScan)-1)
-    result = self.filterScan[index]
+    index = np.clip(index, 0, len(self.filterScan.ranges)-1)
+    result = self.filterScan.ranges[index]
     return result
 
   # data: single message from topic /scan
