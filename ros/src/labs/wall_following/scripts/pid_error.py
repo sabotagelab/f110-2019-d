@@ -15,27 +15,28 @@ from race.msg import drive_param
 dirname = os.path.dirname(__file__)
 filepath = os.path.join(dirname, '../config/config.yaml')
 with open (filepath, 'r') as f:
-	doc = yaml.load(f)
+  doc = yaml.load(f)
+  doc = doc["pid_error"]
 
 # You can define constants in Python as uppercase global names like these.
-MIN_DISTANCE = doc["pid_error"]["MIN_DISTANCE"]
-MAX_DISTANCE = doc["pid_error"]["MAX_DISTANCE"]
+MIN_DISTANCE = doc["MIN_DISTANCE"]
+MAX_DISTANCE = doc["MAX_DISTANCE"]
 MIN_ANGLE = 0
 MAX_ANGLE = 3*math.pi/2
 THETA = math.pi/16
 
 #estimated delay from command to steady state
 
-CONTROL_DELAY_ESTIMATE = doc["pid_error"]["CONTROL_DELAY_ESTIMATE"]
-lookDistance = doc["pid_error"]["lookDistance"]
-DESIRED_DISTANCE = doc["pid_error"]["DESIRED_DISTANCE"]
+CONTROL_DELAY_ESTIMATE = doc["CONTROL_DELAY_ESTIMATE"]
+lookDistance = doc["lookDistance"]
+DESIRED_DISTANCE = doc["DESIRED_DISTANCE"]
 
 #historical speed, updated continuosly
 lastSpeed = 1
 
-currentMode = doc["pid_error"]["currentMode"]
-currentEnumMode = doc["pid_error"]["currentEnumMode"]
-currentGapAngle = doc["pid_error"]["currentGapAngle"]
+currentMode = doc["currentMode"]
+currentEnumMode = doc["currentEnumMode"]
+currentGapAngle = doc["currentGapAngle"]
 modeMap = {
   "center" : 0,
   "left" : 1,
@@ -47,9 +48,9 @@ class Interface:
   def __init__(self):
     rospy.init_node('pid_error_node', anonymous = True)
     self.pidErrorPub = rospy.Publisher('pid_error', pid_angle_input, queue_size=10)
-    self.laserScanSub = rospy.Subscriber("scan", LaserScan, scan_callback)
-    self.followTypePub = rospy.Subscriber("follow_types", follow_type, changeFollowType)
-    self.cmdVelSub = rospy.Subscriber("cmd_vel", drive_param, setLookDistance)
+    self.laserScanSub = rospy.Subscriber("scan", LaserScan, self.scan_callback)
+    self.followTypePub = rospy.Subscriber("follow_types", follow_type, self.changeFollowType)
+    self.cmdVelSub = rospy.Subscriber("cmd_vel", drive_param, self.setLookDistance)
   
     self.currentRanges = [1] * 2000
 
@@ -68,7 +69,7 @@ class Interface:
   def scan_callback(self, data):
     self.lidarScan = data
     self.filterScan = self.filterRanges()
-    error = self.modeEnumMap[currentEnumMode](data)
+    error = self.modeEnumMap[currentEnumMode]()
   #  if error == 0:
   #    print(currentRanges)
     msg = pid_angle_input()
@@ -89,7 +90,7 @@ class Interface:
   def getRange(self, angle):
     inc = self.lidarScan.angle_increment
     index = int(angle / inc)
-    index = np.clip(index, 0, len(self.filterScan.ranges)-1)
+    index = np.clip(index, 0, len(self.filterScan)-1)
     return self.filterScan[index]
 
   # data: single message from topic /scan
