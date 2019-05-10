@@ -3,7 +3,7 @@ pid_error:
   MAX_DISTANCE: 30.0
   DESIRED_DISTANCE: .75
 
-  CONTROL_DELAY_ESTIMATE: 0.0
+  CONTROL_DELAY_ESTIMATE: 0.1
   minLookDistance: .1
   lookDistanceMultiplier: 1
 
@@ -17,7 +17,7 @@ control:
   KD: 0.02
 
   MAX_VEL: 2
-  MIN_VEL: .5
+  MIN_VEL: 1
   MAX_STEERING_ANGLE: 20
   N: 1
   K: 0.5
