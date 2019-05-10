@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+
 import rospy
 from race.msg import drive_param
 from std_msgs.msg import Float64
@@ -11,9 +12,9 @@ import time
 
 
 # TODO: modify these constants to make the car follow walls smoothly.
-KP = .03
-KI = .00
-KD = .000
+KP = 1
+KI = 0
+KD = 0.01
 
 #KP = .1 
 #KI = 0
@@ -25,8 +26,8 @@ weightFunc = lambda x : N*math.exp(-K*x)
 
 SPD_DEC_ANGLE_PERIOD = np.deg2rad(10)
 SPD_DEC_ANGLE_MAX = np.deg2rad(20)
-MAX_VEL = 1.5 #m/s
-MIN_VEL = .5
+MAX_VEL = 2 #m/s
+MIN_VEL = 1
 
 A = .5 #top of decrease
 B = 0 #bottom of decrease
@@ -76,7 +77,7 @@ class Interface:
 		#return np.average(np.gradient(err), weights=self.weights)
 	
 	def integralError(self, error):
-		return pow((self.currentTime - self.lastTime), 2) * error
+		return (self.currentTime - self.lastTime) * error
 
 	def proportionError(self, error):
 		return (self.currentTime - self.lastTime) * error
@@ -87,7 +88,7 @@ class Interface:
 		#angleStepDecrease = (int(avgAngle / SPD_DEC_ANGLE_PERIOD)) * A
 		#angleRemainderInc = angleLimitFunc(np.rad2deg(avgAngle % SPD_DEC_ANGLE_PERIOD))
 		#return MAX_VEL - MIN_VEL - angleStepDecrease + angleRemainderInc
-		return (avgAngle)/(SPD_DEC_ANGLE_MAX)*(MAX_VEL-MIN_VEL) + MIN_VEL
+		return (SPD_DEC_ANGLE_MAX-avgAngle)/(SPD_DEC_ANGLE_MAX)*(MAX_VEL-MIN_VEL) + MIN_VEL
 
 	def control_callback(self, data):
 		#calculate frame time
@@ -101,7 +102,7 @@ class Interface:
 		self.etInt += self.integralError(et)
 
 		#weighted pid equation for angle increment
-		ut = KP * self.proportionError(et) + KI * self.etInt + KD * self.derivativeError(et)
+		ut = KP * (et) + KI * self.etInt + KD * self.derivativeError(et)
 		self.angle += ut #* (self.currentTime - self.lastTime)
 		if np.isnan(self.angle):
 			self.angle = np.nanmean(self.angleWindow)
@@ -114,9 +115,9 @@ class Interface:
 
 		msg = drive_param()
 		msg.angle = self.angle    # TODO: implement PID for steering angle
-		msg.velocity = self.angleMaxVelocity(self.angle)  # TODO: implement PID for velocity
-		#print("ERROR: ", et)
-		#print("ANGLE: ", np.rad2deg(self.angle))
+		msg.velocity = -self.angleMaxVelocity(self.angle)  # TODO: implement PID for velocity
+		print("ERROR: ", et)
+		print("ANGLE: ", np.rad2deg(self.angle))
 		#print("VEL: ", msg.velocity)
 		self.drivePub.publish(msg)
 
