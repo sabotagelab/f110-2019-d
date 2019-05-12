@@ -87,7 +87,7 @@ class Interface:
         self.storeQ(self.angleWindow, elem)
 
     def derivativeError(self, error):
-        return (error - self.lastError) #/ (self.currentTime - self.lastTime)
+        return (error - self.lastError) / (self.currentTime - self.lastTime)
         #err = np.asarray(self.errorWindow)
         #return np.average(np.gradient(err), weights=self.weights)
 
