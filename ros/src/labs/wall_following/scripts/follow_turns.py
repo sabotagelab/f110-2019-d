@@ -27,6 +27,7 @@ class Interface:
 
         #how many "significant" gaps will trigger advance to next instruction
         self.newInstructionGapCountThresh = 1
+        self.forwardHeading = np.deg2rad(135)
 
         self.defaultInstruction= "C"
         self.defaultInstructionEnum = self.instructions[self.defaultInstruction]
@@ -35,8 +36,9 @@ class Interface:
 
         self.instructionQueue = queue.Queue()
 
-        os.path.join(os.path.dirname(__file__))
-        self.loadInstructions('../explicit_instructions/levine_instructions.dat')
+        self.instructionFile = "../explicit_instructions/levine_instructions.dat"
+        self.instructionFile = os.path.join(os.path.dirname(__file__), self.instructionFile)
+        self.loadInstructions(self.instructionFile)
 
     def start(self):
         rospy.spin()
@@ -75,12 +77,11 @@ class Interface:
     #the center angle of the gap with heading closest to 135 (lidar forward)
     def findHeadingGapAngle(self, gaps):
         centerAngle = lambda g : g.features[len(g.features)//2].angle
-        forwardHeading = np.deg2rad(135)
 
         bestGap = None
         bestError = 2*math.pi #cannot be off by a full circle!!!
         for gap in gaps[1:]:
-            error = abs(centerAngle(gap) - forwardHeading)
+            error = abs(centerAngle(gap) - self.forwardHeading)
             if error < bestError:
                 bestError = error 
                 bestGap = gap

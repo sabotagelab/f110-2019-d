@@ -34,15 +34,15 @@ DESIRED_DISTANCE = doc["DESIRED_DISTANCE"]
 #historical speed, updated continuosly
 lastSpeed = 1
 
-currentMode = doc["currentMode"]
-currentEnumMode = doc["currentEnumMode"]
-currentGapAngle = doc["currentGapAngle"]
 modeMap = {
   "center" : 0,
   "left" : 1,
   "right" : 2,
   "gap" : 3
 }
+currentMode = doc["currentMode"] if "currentMode" in doc else None
+currentEnumMode = doc["currentEnumMode"] if not currentMode else modeMap[currentMode]
+currentGapAngle = doc["currentGapAngle"]
 
 class Interface:
   def __init__(self):
@@ -174,7 +174,7 @@ class Interface:
 
           chunkStart = 0
           for c in nanchunks:
-              inc = (data[c[0]-1] - data[c[0]+c[1]]-1) / c[1]
+              inc = (data[c[0]-1] - data[c[0]+c[1]-1]) / c[1]
               for i in xrange(chunkStart, chunkStart+c[1]):
                   data[nanidx[i]] = data[c[0]-1] + (i-chunkStart) * inc
               chunkStart += c[1]
