@@ -16,8 +16,12 @@ import yaml
 import os
 
 
+configFile = "config.yaml"
+if len(sys.argv) > 1:
+    configFile = sys.argv[1]
 dirname = os.path.dirname(__file__)
-filepath = os.path.join(dirname, '../config/config.yaml')
+filepath = os.path.join(dirname, '../config/' + configFile)
+
 with open (filepath, 'r') as f:
   doc = yaml.load(f)
   doc = doc["pid_error"]
@@ -38,7 +42,7 @@ CONTROL_DELAY_ESTIMATE = doc["CONTROL_DELAY_ESTIMATE"]
 minLookDistance = doc["minLookDistance"] if "minLookDistance" in doc else 0
 lookDistanceMultiplier = doc["lookDistanceMultiplier"] if "lookDistanceMultiplier" in doc else 1
 lookDistance = 1
-lastSpeed = 1 #last speed
+currentSpeed = 1 #last speed
 
 modeMap = {
   "center" : 0,
@@ -96,7 +100,7 @@ class Interface:
     currentEnumMode = data.type
     currentGapAngle = data.gap_angle
 
-  def setLookDistance(self, data):
+  def setLookDistance(self):
     lookDistance = minLookDistance + lookDistanceMultiplier * (CONTROL_DELAY_ESTIMATE + self.frameTime) * currentSpeed
   
   def storeSpeed(self, data):
@@ -109,7 +113,8 @@ class Interface:
     inc = self.lidarScan.angle_increment
     index = int(angle / inc)
     index = np.clip(index, 0, len(self.filterScan)-1)
-    return self.filterScan[index]
+    result = self.filterScan[index]
+    return result
 
   # data: single message from topic /scan
   # desired_distance: desired distance to the left wall [meters]
@@ -179,20 +184,32 @@ class Interface:
       if len(nanidx):
           nanchunks = []
           last = nanidx[0]
+          first = nanidx[0]
           size = 1
           for ri in xrange(1, len(nanidx)):
               if nanidx[ri] - last != 1:
-                  nanchunks.append((last, size))
-                  last = nanidx[ri].tolist()
+                  nanchunks.append((first, size))
+                  first = nanidx[ri]
+                  last = first
                   size = 1
               else:
                   size += 1
+                  last = nanidx[ri]
+
           if last != None:
-              nanchunks.append((last, size))
+              nanchunks.append((first, size))
 
           chunkStart = 0
           for c in nanchunks:
-              inc = (data[c[0]-1] - data[c[0]+c[1]-1]) / c[1]
+              if c[0] + c[1] >= len(data):
+                top = .1
+              else:
+                top = data[c[0] + c[1]]
+              if c[0] <= 0:
+                bot = .1
+              else:
+                bot = data[c[0]-1]
+              inc = (bot-top) / c[1]
               for i in xrange(chunkStart, chunkStart+c[1]):
                   data[nanidx[i]] = data[c[0]-1] + (i-chunkStart) * inc
               chunkStart += c[1]

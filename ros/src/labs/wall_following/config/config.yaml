@@ -15,5 +15,9 @@ control:
   KP: 0.1
   KI: 0
   KD: 0.01
+
+  MAX_VEL: 2
+  MIN_VEL: .5
+  MAX_STEERING_ANGLE: 20
   N: 1
   K: 0.5
