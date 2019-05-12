@@ -1,15 +1,19 @@
 #!/usr/bin/env python
 import rospy
 import math
+import time
 import numpy as np
 import sys
+
+#msg imports
+from wall_following.msg import pid_angle_input, follow_type
+from race.msg import drive_param
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Float64
-import pdb
-from wall_following.msg import pid_angle_input, follow_type
+
+#config imports
 import yaml
 import os
-from race.msg import drive_param
 
 
 dirname = os.path.dirname(__file__)
@@ -18,21 +22,23 @@ with open (filepath, 'r') as f:
   doc = yaml.load(f)
   doc = doc["pid_error"]
 
-# You can define constants in Python as uppercase global names like these.
-MIN_DISTANCE = doc["MIN_DISTANCE"]
-MAX_DISTANCE = doc["MAX_DISTANCE"]
+#ANGLE CONFIG
 MIN_ANGLE = 0
 MAX_ANGLE = 3*math.pi/2
 THETA = math.pi/16
 
-#estimated delay from command to steady state
-
-CONTROL_DELAY_ESTIMATE = doc["CONTROL_DELAY_ESTIMATE"]
-lookDistance = doc["lookDistance"]
+#DISTANCE CONFIG
 DESIRED_DISTANCE = doc["DESIRED_DISTANCE"]
+MIN_DISTANCE = doc["MIN_DISTANCE"]
+MAX_DISTANCE = doc["MAX_DISTANCE"]
 
-#historical speed, updated continuosly
-lastSpeed = 1
+#LOOK CONFIG
+#estimated delay from command to steady state
+CONTROL_DELAY_ESTIMATE = doc["CONTROL_DELAY_ESTIMATE"]
+minLookDistance = doc["minLookDistance"] if "minLookDistance" in doc else 0
+lookDistanceMultiplier = doc["lookDistanceMultiplier"] if "lookDistanceMultiplier" in doc else 1
+lookDistance = 1
+lastSpeed = 1 #last speed
 
 modeMap = {
   "center" : 0,
@@ -40,6 +46,8 @@ modeMap = {
   "right" : 2,
   "gap" : 3
 }
+
+#MODE CONFIG
 currentMode = doc["currentMode"] if "currentMode" in doc else None
 currentEnumMode = doc["currentEnumMode"] if not currentMode else modeMap[currentMode]
 currentGapAngle = doc["currentGapAngle"]
@@ -50,7 +58,7 @@ class Interface:
     self.pidErrorPub = rospy.Publisher('pid_error', pid_angle_input, queue_size=10)
     self.laserScanSub = rospy.Subscriber("scan", LaserScan, self.scan_callback)
     self.followTypePub = rospy.Subscriber("follow_types", follow_type, self.changeFollowType)
-    self.cmdVelSub = rospy.Subscriber("cmd_vel", drive_param, self.setLookDistance)
+    self.cmdVelSub = rospy.Subscriber("cmd_vel", drive_param, self.storeSpeed)
   
     self.currentRanges = [1] * 2000
 
@@ -61,17 +69,24 @@ class Interface:
       (3 , self.followGap)
     ])
 
+    self.lastTime = time.time()
+
   def start(self):
     rospy.spin()
 
   # Callback for receiving LIDAR data on the /scan topic.
   # data: the LIDAR data, published as a list of distances to the wall.
   def scan_callback(self, data):
+    self.currentTime = time.time()
+    self.frameTime = self.currentTime - self.lastTime
+    self.lastTime = self.currentTime
+
     self.lidarScan = data
     self.filterScan = self.filterRanges()
+
+    self.setLookDistance()
+
     error = self.modeEnumMap[currentEnumMode]()
-  #  if error == 0:
-  #    print(currentRanges)
     msg = pid_angle_input()
     msg.pid_error = error
     msg.header = data.header
@@ -82,7 +97,10 @@ class Interface:
     currentGapAngle = data.gap_angle
 
   def setLookDistance(self, data):
-    lookDistance = data.velocity
+    lookDistance = minLookDistance + lookDistanceMultiplier * (CONTROL_DELAY_ESTIMATE + self.frameTime) * currentSpeed
+  
+  def storeSpeed(self, data):
+    currentSpeed = data
 
   # data: single message from topic /scan
   # angle: between 0(far right) to 270 (far left) degrees, where 45 degrees is directly to the right
