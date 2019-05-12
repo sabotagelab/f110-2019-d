@@ -7,7 +7,7 @@
   <arg name="instruction" default="false"/>
 
   <arg name="visualize" default="false"/>
-  <arg name="config" default="config/default.yaml"/>
+  <arg name="config" default="config/config.yaml"/>
 
   <include file="$(find racecar)/launch/teleop.launch" if="$(arg onboard)"/>
   <include file="$(find racecar_gazebo)/launch/racecar.launch" unless="$(arg onboard)">
@@ -15,7 +15,7 @@
     <arg name="gui" value="$(arg gui)" unless="$(arg onboard)"/>
   </include>
 
-  <node pkg="wall_following" name="pid_error_node" type="pid_error.py" output="screen"/> 
+  <node pkg="wall_following" name="pid_error_node" type="pid_error.py" output="screen" args="$(arg config)"/> 
   <node pkg="wall_following" name="control_node" type="control.py" output="screen" args="$(arg config) $(arg onboard)"/>
 
   <node pkg="wall_following" name="sim_connector_node" type="sim_connector.py" output="screen" unless="$(arg onboard)"/>

@@ -13,7 +13,7 @@
     <param name="frame_id" value="laser"/>
     <param name="calibrate_time" value="true"/>
     <param name="publish_intensity" value="true"/>
-    <param name="publish_multiecho" value="false"/>
+    <param name="publish_multiecho" value="true"/>
     <param name="angle_min" value="-2.35619"/>
     <param name="angle_max" value="2.35618"/>
   </node>

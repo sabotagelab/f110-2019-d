@@ -1,13 +1,10 @@
 pid_error:
   MIN_DISTANCE: 0.1
   MAX_DISTANCE: 30.0
-  DESIRED_DISTANCE: .75
-
-  CONTROL_DELAY_ESTIMATE: 0.0
-  minLookDistance: .1
-  lookDistanceMultiplier: 1
-
-  currentMode: "center"
+  CONTROL_DELAY_ESTIMATE: 0.5
+  lookDistance: 2
+  DESIRED_DISTANCE: 1
+  currentMode: "left"
   currentEnumMode: 1
   currentGapAngle: 0
 
@@ -16,8 +13,9 @@ control:
   KI: 0.000
   KD: 0.02
 
-  MAX_VEL: 2
+  MAX_VEL: 3
   MIN_VEL: .5
   MAX_STEERING_ANGLE: 20
+
   N: 1
   K: 0.5
