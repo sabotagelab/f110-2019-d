@@ -7,7 +7,7 @@
   <arg name="instruction" default="false"/>
 
   <arg name="visualize" default="false"/>
-  <arg name="config" default="config/default.yaml"/>
+  <arg name="config" default="config/config.yaml"/>
 
   <include file="$(find racecar)/launch/teleop.launch" if="$(arg onboard)"/>
   <include file="$(find racecar_gazebo)/launch/racecar.launch" unless="$(arg onboard)">
@@ -15,7 +15,8 @@
     <arg name="gui" value="$(arg gui)" unless="$(arg onboard)"/>
   </include>
 
-  <node pkg="wall_following" name="pid_error_node" type="pid_error.py" output="screen"/> 
+  <node pkg="lidar_filtering" name="lidar_filtering_node" type="filterScan.py" output="screen"/>
+  <node pkg="wall_following" name="pid_error_node" type="pid_error.py" output="screen" args="$(arg config)"/> 
   <node pkg="wall_following" name="control_node" type="control.py" output="screen" args="$(arg config) $(arg onboard)"/>
 
   <node pkg="wall_following" name="sim_connector_node" type="sim_connector.py" output="screen" unless="$(arg onboard)"/>
@@ -23,7 +24,7 @@
 
   <node pkg="wall_following" name="pid_meta_node" type="pemdas_analysis.py" output="screen" unless="$(arg onboard)"/> 
 
-  <node pkg="wall_following" name="follow_turns_node" type="follow_turns.py" output="screen" if="$(arg instruction)"/>
+  <node pkg="wall_following" name="follow_turns_node" type="follow_turns.py" output="screen" args="$(arg config)" if="$(arg instruction)"/>
   <node pkg="pemdas_gap_finding" name="pemdas_gap_finding" type="find_gap.py" output="screen" if="$(arg instruction)"/>
 
 </launch>

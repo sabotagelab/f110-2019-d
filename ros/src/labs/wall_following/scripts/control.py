@@ -11,14 +11,12 @@ import yaml
 import os
 import sys
 
+configFile = "config.yaml"
+if len(sys.argv) > 1:
+    configFile = sys.argv[1]
 dirname = os.path.dirname(__file__)
-filepath = os.path.join(dirname, '../config/config.yaml')
+filepath = os.path.join(dirname, '../config/' + configFile)
 #print(filepath)
-
-# TODO: modify these constants to make the car follow walls smoothly.
-KP =  1.7
-KI = .0001
-KD = 1.000
 
 with open (filepath, 'r') as f:
     doc = yaml.load(f)
@@ -33,9 +31,9 @@ K = doc["K"]
 weightFunc = lambda x : N*math.exp(-K*x)
 
 SPD_DEC_ANGLE_PERIOD = np.deg2rad(10)
-SPD_DEC_ANGLE_MAX = np.deg2rad(20)
-MAX_VEL = 2 #m/s
-MIN_VEL = 1
+SPD_DEC_ANGLE_MAX = np.deg2rad(doc["MAX_STEERING_ANGLE"] if "MAX_STEERING_ANGLE" in doc else 20)
+MAX_VEL = doc["MAX_VEL"] #m/s
+MIN_VEL = doc["MIN_VEL"]
 
 A = .5 #top of decrease
 B = 0 #bottom of decrease
@@ -64,9 +62,6 @@ class Interface:
         self.angle = 0
         self.lastAngle = 0
         self.lastError = 0
-
-        if len(sys.argv) > 1:
-            self.configFile = sys.argv[1]
 
         self.velocityMultiple = 1
         if len(sys.argv) > 2 and sys.argv[2] == "true":
