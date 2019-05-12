@@ -11,7 +11,7 @@ import time
 
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(sys.path[0]), 'src'))
-from algorithms import processGaps, globalizePoint, gradientScan_np, filterRanges
+from algorithms import processGaps, globalizePoint 
 
 PUBLISH_GAP_POINTS = False
 if PUBLISH_GAP_POINTS:
@@ -21,7 +21,7 @@ class Interface:
     def __init__(self, rate=10, window=10):
         rospy.init_node('pemdas_gap_finding')
 
-        self.sub = rospy.Subscriber("/scan", LaserScan, self.callback)
+        self.sub = rospy.Subscriber("/filter_scan", LaserScan, self.callback)
         #self.subTF = rospy.Subscriber("/tf", TFMessage, self.storeTF)
         #self.subTF_static = rospy.Subscriber("/tf_static", TFMessage, self.storeTF)
 
@@ -44,22 +44,21 @@ class Interface:
         rospy.spin()
 
 
-    def callback(self, scanData):
-        rospy.loginfo("Recieved Scan Data")
+    def callback(self, lidarData):
+        #rospy.loginfo("Recieved filtered lidar data")
         #kSeed = find_k(scanData)
         #kSeedNP = find_k_np(scanData)
         #rospy.loginfo("Found k seed value: %i" % kSeed)
         #rospy.loginfo("Found np k seed value: %i" % kSeedNP)
 
         #we only want to pop once the window is full
-        lidarData = filterRanges(scanData)
         if not len(self.lidarWindow) < self.lidarWindow.maxlen:
             self.lidarWindow.pop()
         self.lidarWindow.appendleft(lidarData)
         #avgData = np.average(np.asarray(self.lidarWindow), weights=self.lidarHistoryGradient)
 
 
-        gaps = gradientScan_np(scanData, lidarData)
+        gaps = gradientScan_np(lidarData, lidarData)
 
         scores, linearDistances, centerGap = processGaps(gaps)
 

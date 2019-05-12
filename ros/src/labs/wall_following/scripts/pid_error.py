@@ -60,7 +60,7 @@ class Interface:
   def __init__(self):
     rospy.init_node('pid_error_node', anonymous = True)
     self.pidErrorPub = rospy.Publisher('pid_error', pid_angle_input, queue_size=10)
-    self.laserScanSub = rospy.Subscriber("scan", LaserScan, self.scan_callback)
+    self.laserScanSub = rospy.Subscriber("filter_scan", LaserScan, self.scan_callback)
     self.followTypePub = rospy.Subscriber("follow_types", follow_type, self.changeFollowType)
     self.cmdVelSub = rospy.Subscriber("cmd_vel", drive_param, self.storeSpeed)
   
@@ -85,8 +85,7 @@ class Interface:
     self.frameTime = self.currentTime - self.lastTime
     self.lastTime = self.currentTime
 
-    self.lidarScan = data
-    self.filterScan = self.filterRanges()
+    self.filterScan = data
 
     self.setLookDistance()
 
@@ -110,7 +109,7 @@ class Interface:
   # angle: between 0(far right) to 270 (far left) degrees, where 45 degrees is directly to the right
   # Outputs length in meters to object with angle in lidar scan field of view
   def getRange(self, angle):
-    inc = self.lidarScan.angle_increment
+    inc = self.filterScan.angle_increment
     index = int(angle / inc)
     index = np.clip(index, 0, len(self.filterScan)-1)
     result = self.filterScan[index]
@@ -168,54 +167,11 @@ class Interface:
       error = 0
     else:
       if np.isinf(error):
-        error = self.lidarScan.range_max
+        error = self.filterScan.range_max
     return error
 
   def followGap(self, angle):
     return lookDistance*math.sin(angle)
-
-  def filterRanges(self, coe=1.1):
-      from scipy.signal import savgol_filter
-      data = np.array(self.lidarScan.ranges)
-      data[np.isinf(data)] = self.lidarScan.range_max * coe
-      #data[np.isnan(data)] = lidarMessage.range_max * coe
-
-      nanidx = np.where(np.isnan(data))[0]
-      if len(nanidx):
-          nanchunks = []
-          last = nanidx[0]
-          first = nanidx[0]
-          size = 1
-          for ri in xrange(1, len(nanidx)):
-              if nanidx[ri] - last != 1:
-                  nanchunks.append((first, size))
-                  first = nanidx[ri]
-                  last = first
-                  size = 1
-              else:
-                  size += 1
-                  last = nanidx[ri]
-
-          if last != None:
-              nanchunks.append((first, size))
-
-          chunkStart = 0
-          for c in nanchunks:
-              if c[0] + c[1] >= len(data):
-                top = .1
-              else:
-                top = data[c[0] + c[1]]
-              if c[0] <= 0:
-                bot = .1
-              else:
-                bot = data[c[0]-1]
-              inc = (bot-top) / c[1]
-              for i in xrange(chunkStart, chunkStart+c[1]):
-                  data[nanidx[i]] = data[c[0]-1] + (i-chunkStart) * inc
-              chunkStart += c[1]
-
-      data = savgol_filter(data.tolist(), 11, 3)
-      return data
 
 # Boilerplate code to start this ROS node.
 # DO NOT MODIFY!
