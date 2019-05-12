@@ -34,6 +34,7 @@ class Interface:
       from scipy.signal import savgol_filter
       data = np.array(self.lidarScan.ranges)
       data[np.isinf(data)] = self.lidarScan.range_max * coe
+      data[np.where(data <= self.lidarScan.range_min)] = np.nan
       #data[np.isnan(data)] = lidarMessage.range_max * coe
 
       nanidx = np.where(np.isnan(data))[0]
