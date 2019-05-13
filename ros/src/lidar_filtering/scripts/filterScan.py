@@ -34,10 +34,12 @@ class Interface:
       from scipy.signal import savgol_filter
       data = np.array(self.lidarScan.ranges)
       data[np.isinf(data)] = self.lidarScan.range_max * coe
-      data[np.where(data <= self.lidarScan.range_min)] = np.nan
+      data[np.isnan(data)] = -5
+      data[np.where(data <= self.lidarScan.range_min)] = -5
+      data[np.where(data >= self.lidarScan.range_max)] = -5
       #data[np.isnan(data)] = lidarMessage.range_max * coe
 
-      nanidx = np.where(np.isnan(data))[0]
+      nanidx = np.where(data == -5)[0]
       if len(nanidx):
           nanchunks = []
           last = nanidx[0]
@@ -68,7 +70,10 @@ class Interface:
                 bot = data[c[0]-1]
               inc = (bot-top) / c[1]
               for i in xrange(chunkStart, chunkStart+c[1]):
-                  data[nanidx[i]] = data[c[0]-1] + (i-chunkStart) * inc
+                offset = (i-chunkStart) * inc
+                linearization = np.cos((i-chunkStart) * self.lidarScan.angle_increment) * offset
+                print(linearization)
+                data[nanidx[i]] = data[c[0]-1] + offset +  linearization#, self.lidarScan.range_max * coe)
               chunkStart += c[1]
 
       data = savgol_filter(data.tolist(), 11, 3)
