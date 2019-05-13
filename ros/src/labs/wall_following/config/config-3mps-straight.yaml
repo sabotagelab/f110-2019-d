@@ -4,7 +4,7 @@ pid_error:
   DESIRED_DISTANCE: .75
 
   CONTROL_DELAY_ESTIMATE: 0.1
-  minLookDistance: 4 
+  minLookDistance: 1
   lookDistanceMultiplier: 0
 
   currentMode: "left"
@@ -12,9 +12,9 @@ pid_error:
   currentGapAngle: 0
 
 control:
-  KP: 0.041
-  KI: 0.00
-  KD: 0.040
+  KP: 0.035
+  KI: 0.000
+  KD: 0.035
 
   MAX_VEL: 3
   MIN_VEL: 1
