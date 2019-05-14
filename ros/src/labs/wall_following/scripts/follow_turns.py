@@ -21,7 +21,7 @@ class Interface:
 
         #visualization topics
         if DO_VISUALIZATION:
-            self.goodGapVisualizationPub = rospy.Publisher("visualize_good_gaps", MarkerArray, queue_size=3)
+            self.goodGapVisualizationPub = rospy.Publisher("visualize_good_gaps", MarkerArray, queue_size=10)
 
         self.instructions = {
             "C" : 0,    #followcenter
@@ -93,9 +93,12 @@ class Interface:
     def determineInstruction(self, data):
         if self.countGoodGaps(data) > self.newInstructionGapCountThresh:
             self.inTurnNow = True
-            if self.currentInstruction == None:
+            if not self.instructionQueue.empty() and self.currentInstruction == None:
                 self.currentInstruction = self.instructionQueue.get()
                 self.currentInstructionEnum = self.instructions[self.currentInstruction]
+            else: 
+                print("Instruction Queue empty, follow_turns executing default instruction...")
+                self.currentInstruction = self.defaultInstruction
             self.follow(self.currentInstruction)
             if self.currentInstructionEnum == 3: #only if following gap
                 self.followGapAngle = self.findHeadingGapAngle(data.gaps)
@@ -110,7 +113,6 @@ class Interface:
         std = np.std(gaps.scores)
         thresh = mean + (std * self.goodGapThresholdFactor)
 
-        print(gaps.scores)
         criticalGapIndices = np.argwhere(gaps.scores > thresh)
         
         if DO_VISUALIZATION:
@@ -142,6 +144,7 @@ class Interface:
                 marker.color.a = 1.0
 
                 gapMarkers.markers.append(marker)
+            rospy.loginfo("Published good gap markers")
             self.goodGapVisualizationPub.publish(gapMarkers)
 
         return len(criticalGapIndices)
