@@ -42,7 +42,7 @@ class Interface:
       #data[np.isnan(data)] = lidarMessage.range_max * coe
 
       self.interpolateNan(data)
-      data = savgol_filter(data.tolist(), 11, 3)
+      data = savgol_filter(data.tolist(), 11, 1)
       return data
 
     def interpolateNan(self, data):
