@@ -41,11 +41,11 @@ class Interface:
       data[np.where(data >= self.lidarScan.range_max)] = -5
       #data[np.isnan(data)] = lidarMessage.range_max * coe
 
-      self.interpolateNan(data)
+      self.interpolateNan(data, coe)
       data = savgol_filter(data.tolist(), 11, 1)
       return data
 
-    def interpolateNan(self, data):
+    def interpolateNan(self, data, coe):
       nanidx = np.where(data == -5)[0]
       if len(nanidx):
           nanchunks = []
@@ -84,8 +84,7 @@ class Interface:
               for i in xrange(chunkStart, chunkStart+c[1]):
                 offset = (i-chunkStart) * inc
                 linearization = np.cos((i-chunkStart) * self.lidarScan.angle_increment) * offset
-                print(linearization)
-                data[nanidx[i]] = data[c[0]-1] + offset +  linearization#, self.lidarScan.range_max * coe)
+                data[nanidx[i]] = min(data[c[0]-1] + offset, self.lidarScan.range_max * coe)
               chunkStart += c[1]
 
       return data

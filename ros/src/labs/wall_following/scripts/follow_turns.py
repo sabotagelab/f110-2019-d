@@ -8,12 +8,20 @@ from pemdas_gap_finding.msg import Gaps
 import os, sys
 import yaml
 
+DO_VISUALIZATION = True
+if DO_VISUALIZATION:
+    from visualization_msgs.msg import Marker, MarkerArray
+
 class Interface:
     def __init__(self):
         rospy.init_node("follow_turns_node", anonymous=True)
 
         self.gapSub = rospy.Subscriber("lidar_gaps", Gaps, self.determineInstruction)
         self.followPub = rospy.Publisher("follow_type", follow_type, queue_size=5)
+
+        #visualization topics
+        if DO_VISUALIZATION:
+            self.goodGapVisualizationPub = rospy.Publisher("visualize_good_gaps", MarkerArray, queue_size=3)
 
         self.instructions = {
             "C" : 0,    #followcenter
@@ -39,7 +47,9 @@ class Interface:
         self.defaultInstructionEnum = self.instructions[self.defaultInstruction]
         self.currentInstruction = None
         self.currentInstructionEnum = None
-	self.followGapAngle = 0
+
+        self.inTurnNow = False
+        self.followGapAngle = 0
 
         self.instructionQueue = queue.Queue()
 
@@ -68,8 +78,6 @@ class Interface:
         if "instructionFile" in doc:
             self.instructionFile = doc["instructionFile"]
         
-
-
     def start(self):
         rospy.spin()
 
@@ -84,6 +92,7 @@ class Interface:
 
     def determineInstruction(self, data):
         if self.countGoodGaps(data) > self.newInstructionGapCountThresh:
+            self.inTurnNow = True
             if self.currentInstruction == None:
                 self.currentInstruction = self.instructionQueue.get()
                 self.currentInstructionEnum = self.instructions[self.currentInstruction]
@@ -91,6 +100,7 @@ class Interface:
             if self.currentInstructionEnum == 3: #only if following gap
                 self.followGapAngle = self.findHeadingGapAngle(data.gaps)
         else:
+            self.inTurnNow = False
             self.follow(self.defaultInstruction)
             self.currentInstruction = None
 
@@ -100,9 +110,41 @@ class Interface:
         std = np.std(gaps.scores)
         thresh = mean + (std * self.goodGapThresholdFactor)
 
-        criticalGaps = np.argwhere(gaps.scores > thresh)
+        print(gaps.scores)
+        criticalGapIndices = np.argwhere(gaps.scores > thresh)
+        
+        if DO_VISUALIZATION:
+            goodColor = [.1, 1.0, .1]
+            badColor = [1.0, 0, 0]
+            gapMarkers = MarkerArray()
+            gapMarkers.markers = []
+            for gdx in xrange(len(gaps.gaps)):
+                gap = gaps.gaps[gdx]
+                goodGap = gdx in criticalGapIndices
+                color = goodColor if goodGap else badColor
+                marker = Marker()
 
-        return len(criticalGaps)
+                # Specify the frame in which to interpret the x,y,z coordinates. It is the laser frame.
+                marker.id = 100 + gdx
+                marker.header.frame_id = "/laser"
+                marker.pose.position.x = gap.points[1].range * np.cos(gap.points[1].angle)
+                marker.pose.position.y = gap.points[1].range * np.sin(gap.points[1].angle)
+                marker.pose.position.z = 0 # or set this to 0
+
+                marker.type = marker.SPHERE
+
+                marker.scale.x = 1.0 - (not goodGap) * .5
+                marker.scale.y = 1.0 - (not goodGap) * .5
+                marker.scale.z = 1.0 - (not goodGap) * .5
+                marker.color.r = color[0] 
+                marker.color.g = color[1] 
+                marker.color.b = color[2] 
+                marker.color.a = 1.0
+
+                gapMarkers.markers.append(marker)
+            self.goodGapVisualizationPub.publish(gapMarkers)
+
+        return len(criticalGapIndices)
 
     #the center angle of the gap with heading closest to 135 (lidar forward)
     def findHeadingGapAngle(self, gaps):

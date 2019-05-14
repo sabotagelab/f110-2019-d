@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>
+
+  <node pkg="lidar_filtering" name="lidar_filtering_node" type="filterScan.py" output="screen"/>
+
+  <node pkg="wall_following" name="follow_turns_node" type="follow_turns.py" output="screen" args="config.yaml"/>
+  <node pkg="pemdas_gap_finding" name="pemdas_gap_finding" type="find_gap.py" output="screen"/>
+  <node pkg="gap_finding" name="visualize_center_gap" type="visualize_gap_finding.py" output="screen"/>
+
+</launch>

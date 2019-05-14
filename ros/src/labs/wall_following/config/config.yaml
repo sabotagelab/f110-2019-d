@@ -23,7 +23,7 @@ control:
   K: 0.5
 
 instruction:
-  goodGapThresh: 2
+  goodGapThresh: 1
   newInstructionGapCount: 1
   defaultInstruction: C
   instructionDirectory: '../explicit_instructions/'

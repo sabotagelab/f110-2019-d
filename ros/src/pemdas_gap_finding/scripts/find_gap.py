@@ -86,7 +86,7 @@ class Interface:
 
         self.gapPub.publish(gapsMessage)
 
-        rospy.loginfo("Published Gapfinding Info")
+        #rospy.loginfo("Published Gapfinding Info")
         #self.rate.sleep()
 
 def fixAngle(point, scanData):
