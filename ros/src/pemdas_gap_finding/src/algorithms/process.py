@@ -19,7 +19,7 @@ def processGaps(gaps):
     maskedDepths = ma.masked_array(scores, mask=mask)
     maxGap = gaps[maskedDepths.argmax()]
 
-
+    scores -= np.min(scores)
     return scores, linearDistances, maxGap
 
     #deprecated for use with Kmeans 

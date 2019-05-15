@@ -93,10 +93,10 @@ class Interface:
                 count += 1
 
     def determineInstruction(self, data):
+        if DO_VISUALIZATION:
+            self.visualizeTurns(self.inTurnNow)
         if self.countGoodGaps(data) > self.newInstructionGapCountThresh:
             self.inTurnNow = True
-            if DO_VISUALIZATION:
-                self.visualizeTurns(self.inTurnNow)
             if not self.instructionQueue.empty() and self.currentInstruction == None:
                 self.currentInstruction = self.instructionQueue.get()
                 self.currentInstructionEnum = self.instructions[self.currentInstruction]
