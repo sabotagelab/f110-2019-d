@@ -2,7 +2,7 @@ EXTRA DEPENDENCIES: (prefix with ros-<version>-)
 
 ros-control
 gazebo-ros-control
-driver_base
+driver-base
 effort-controllers
 joint-state-controller
 laser-proc

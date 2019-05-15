@@ -114,6 +114,12 @@ class Interface:
     def visualizeTurns(self, text):
         marker = Marker()
         marker.type = marker.TEXT_VIEW_FACING
+        marker.id = 0
+        marker.lifetime = rospy.Duration(2)
+        marker.pose= Pose(Point(0.5, 0.5, 1.45), Quaternion(0, 0, 0, 1))
+        marker.scale = Vector3(0.06, 0.06, 0.06)
+        marker.header = Header( frame_id='base_link')
+        marker.color.a = 1
         marker.text = str(text)
         self.followPubRviz.publish(marker)
 
@@ -138,7 +144,7 @@ class Interface:
                     marker.action = marker.DELETE
                     gapMarkers.markers.append(marker)
                     continue
-                
+
                 gap = gaps.gaps[gdx]
                 goodGap = gdx in criticalGapIndices
                 color = goodColor if goodGap else badColor
