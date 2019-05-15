@@ -11,7 +11,7 @@ def processGaps(gaps):
     #maxGap = max(gaps, key=lambda gap : np.average(gap))
     scores = np.array([np.average(g) for g in gaps])
     scores -= np.min(scores)
-    scores *= scores * linearDistances
+    scores *= linearDistances
     wideEnough = np.where(linearDistances > pow(carWidth * minimumWidthRatio, 2))
     mask = np.ones(len(scores), dtype=int)
     mask[wideEnough] = 0
