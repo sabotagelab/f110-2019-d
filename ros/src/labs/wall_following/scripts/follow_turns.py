@@ -96,7 +96,7 @@ class Interface:
         if self.countGoodGaps(data) > self.newInstructionGapCountThresh:
             self.inTurnNow = True
             if DO_VISUALIZATION:
-                pass#self.visualizeTurns(self.inTurnNow)
+                self.visualizeTurns(self.inTurnNow)
             if not self.instructionQueue.empty() and self.currentInstruction == None:
                 self.currentInstruction = self.instructionQueue.get()
                 self.currentInstructionEnum = self.instructions[self.currentInstruction]
