@@ -12,7 +12,7 @@ DO_VISUALIZATION = True
 if DO_VISUALIZATION:
     from visualization_msgs.msg import Marker, MarkerArray
     from geometry_msgs.msg import Quaternion, Pose, Point, Vector3
-    from std_msgs.msg import Header
+    from std_msgs.msg import Header, ColorRGBA
 
 class Interface:
     def __init__(self):
@@ -20,11 +20,12 @@ class Interface:
 
         self.gapSub = rospy.Subscriber("lidar_gaps", Gaps, self.determineInstruction)
         self.followPub = rospy.Publisher("follow_type", follow_type, queue_size=5)
-        self.followPubRviz = rospy.Publisher("follow_type_rviz", Marker, queue_size=5)
 
         #visualization topics
         if DO_VISUALIZATION:
             self.goodGapVisualizationPub = rospy.Publisher("visualize_good_gaps", MarkerArray, queue_size=10)
+            self.followPubRviz = rospy.Publisher("follow_type_rviz", Marker, queue_size=5)
+            self.instructionPubRviz = rospy.Publisher("instruct_rviz", Marker, queue_size=5)
 
         self.instructions = {
             "C" : 0,    #followcenter
@@ -110,6 +111,8 @@ class Interface:
             else:
                 print("Instruction Queue empty, follow_turns executing default instruction...")
                 self.currentInstruction = self.defaultInstruction
+            if DO_VISUALIZATION:
+                self.visualizeInstruction(self.currentInstruction)
             self.follow(self.currentInstruction)
             if self.currentInstructionEnum == 3: #only if following gap
                 self.followGapAngle = self.findHeadingGapAngle(data.gaps)
@@ -127,9 +130,21 @@ class Interface:
         marker.pose= Pose(Point(-7, 7, 5), Quaternion(0, 0, 0, 1))
         marker.scale = Vector3(1, 1, 1)
         marker.header.frame_id = "/laser"
-        marker.color.a = 1
+        marker.color = ColorRGBA(0.0, 1.0, 0.0, 0.8)
         marker.text = str(text)
         self.followPubRviz.publish(marker)
+
+    def visualizeInstruction(self, text):
+        marker = Marker()
+        marker.type = marker.TEXT_VIEW_FACING
+        marker.id = 1
+        marker.lifetime = rospy.Duration(2)
+        marker.pose= Pose(Point(-10, 7, 5), Quaternion(0, 0, 0, 1))
+        marker.scale = Vector3(1, 1, 1)
+        marker.header.frame_id = "/laser"
+        marker.color = ColorRGBA(0.0, 1.0, 0.0, 0.8)
+        marker.text = str(text)
+        self.instructionPubRviz.publish(marker)
 
 
     def countGoodGaps(self, gaps):
