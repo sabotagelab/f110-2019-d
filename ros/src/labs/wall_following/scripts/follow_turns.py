@@ -51,6 +51,7 @@ class Interface:
 
         self.inTurnNow = False
         self.followGapAngle = 0
+        self.maxMarkers = 0
 
         self.instructionQueue = queue.Queue()
 
@@ -95,7 +96,7 @@ class Interface:
         if self.countGoodGaps(data) > self.newInstructionGapCountThresh:
             self.inTurnNow = True
             if DO_VISUALIZATION:
-                self.visualizeTurns(self.inTurnNow)
+                pass#self.visualizeTurns(self.inTurnNow)
             if not self.instructionQueue.empty() and self.currentInstruction == None:
                 self.currentInstruction = self.instructionQueue.get()
                 self.currentInstructionEnum = self.instructions[self.currentInstruction]
@@ -129,11 +130,18 @@ class Interface:
             badColor = [1.0, 0, 0]
             gapMarkers = MarkerArray()
             gapMarkers.markers = []
-            for gdx in xrange(len(gaps.gaps)):
+            self.maxMarkers = max(len(gaps.gaps), self.maxMarkers)
+            for gdx in xrange(self.maxMarkers):
+                marker = Marker()
+                if gdx >= len(gaps.gaps):
+                    marker.id = 100 + gdx
+                    marker.action = marker.DELETE
+                    gapMarkers.markers.append(marker)
+                    continue
+                
                 gap = gaps.gaps[gdx]
                 goodGap = gdx in criticalGapIndices
                 color = goodColor if goodGap else badColor
-                marker = Marker()
 
                 # Specify the frame in which to interpret the x,y,z coordinates. It is the laser frame.
                 marker.id = 100 + gdx
@@ -143,6 +151,8 @@ class Interface:
                 marker.pose.position.z = 0 # or set this to 0
 
                 marker.type = marker.SPHERE
+                marker.action = marker.MODIFY
+                marker.lifetime = rospy.rostime.Duration(secs=.2)
 
                 marker.scale.x = 1.0 - (not goodGap) * .5
                 marker.scale.y = 1.0 - (not goodGap) * .5
