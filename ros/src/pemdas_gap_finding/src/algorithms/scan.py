@@ -88,61 +88,78 @@ def gradientScan_np(scan, z=5, coe=1.1):
 
     return gaps
 
-def gradientScan(data):
-    from scipy.signal import savgol_filter
-    #Set inf and nan values to a value greater than the furthest scan
-    coe = 1.1
-    scan = [(data.range_max * coe) if math.isnan(x) else x for x in scan]
-    scan = [(data.range_max * coe) if math.isinf(x) else x for x in scan]
+def gradientScan_nan(scan):
+    data = np.array(scan.ranges)
 
-    k = 1
-    dscan = []
-    ddscan = []
-
-    #Find difference between subsequent elements in scan
-    for i in range(len(scan)-1):
-        dscan.append(scan[i+1]-scan[i])
-        if i > 0:
-            ddscan.append(abs(dscan[i]-dscan[i-1]))
-    z = 2
-    mean = sum(ddscan) / len(ddscan)   # mean
-    var  = sum(pow(x-mean,2) for x in ddscan) / len(ddscan)  # variance
-    std  = np.sqrt(var)
-    thres = mean + z*std
-    hits = []
-    last = 0
-    for i in range(len(ddscan)):
-        if (ddscan[i] > thres):
-            hits.append(i)
-            if i-last>1:
-                k = k+1
-            last = i
-    hits.append(len(scan)-1)
-    spike = []
-    feat = [0]
-    for i in range(len(hits)-1):
-        if hits[i+1]-hits[i]==1:
-            spike.append(hits[i])
+    data[np.where(np.isnan(data))] = -5
+    data[np.where(data < scan.range_min)] = -5
+    data[np.where(data > scan.range_max)] = -5
+    data[np.where(data == -5)] = np.nan
+    chunks = []
+    chunkStart = None
+    chunkLen = 0
+    for rdx in xrange(len(data)):
+        if np.isnan(data[rdx]):
+            if chunkStart == None:
+                chunkStart = rdx
+            chunkLen += 1
         else:
-            spike.append(hits[i])
-            feat.append(int(round((spike[0]+spike[-1])/2)))
-            spike = []
-
-    feat.append(len(scan)-1)
-
+            if chunkLen > 0:
+                chunks.append((chunkStart, chunkLen))
+            chunkStart = None
+            chunkLen = 0
+    if chunkLen > 0:
+        chunks.append((chunkStart, chunkLen))
+    
+    #data[np.where(np.isnan(data))] = 5
+    data = interpolateNan(data, scan, 1.1)
     gaps = []
-    angles = [data.angle_increment*i for i in xrange(len(scan))]
-    for idx in xrange(len(feat)-1):
-        gap = zip(scan[feat[idx]:feat[idx+1]], angles[feat[idx]:feat[idx+1]])
-        gaps.append(gap)
+    angles = [scan.angle_increment*i for i in xrange(len(scan.ranges))]
+    for chunk in chunks:
+        gaps.append(zip(data[chunk[0]:chunk[0]+chunk[1]], angles[chunk[0]:chunk[0]+chunk[1]]))
 
-    #bestGap = [0,0]
-    #for i in range(len(feat)-1):
-        #newb = np.average(scan[feat[i]:feat[i+1]])
-        #if newb>bestGap[0]:
-            #dist = np.average(scan[feat[i]:feat[i+1]])
-            #ang = (round((feat[i+1]+feat[i])/2)*data.angle_increment)
-            #ang -= (data.angle_max-data.angle_min)/2
-            #bestGap = [dist , ang]
-
+    #print(gaps)
     return gaps
+
+
+def interpolateNan(data, scan, coe):
+    nanidx = np.where(np.isnan(data))[0]
+    if len(nanidx):
+        nanchunks = []
+        chunkStart = None
+        chunkLen = 0
+        for rdx in xrange(len(data)):
+            if np.isnan(data[rdx]):
+                if chunkStart == None:
+                    chunkStart = rdx
+                chunkLen += 1
+            else:
+                if chunkLen > 0:
+                    nanchunks.append((chunkStart, chunkLen))
+                chunkStart = None
+                chunkLen = 0
+        if chunkLen > 0:
+            nanchunks.append((chunkStart, chunkLen))
+
+        chunkStart = 0
+        oneSide = False
+        for c in nanchunks:
+            if c[0] + c[1] >= len(data):
+                top = data[c[0]-2]
+                bot = data[c[0]-1]
+                oneSide = True
+            elif c[0] <= 0:
+                top = data[c[0] + c[1]]
+                bot = data[c[0] + c[1] + 1]
+                oneSide = True
+            else:
+                top = data[c[0] + c[1]]
+                bot = data[c[0]-1]
+            #if we are using a one-sided gradient to interpolate, dont divide
+            inc = (bot-top) / (c[1]+1) if not oneSide else 1
+            for i in xrange(c[0], c[0]+c[1]):
+                offset = (i-c[0]) * inc
+                data[i] = min(bot + offset, scan.range_max * coe)
+
+    return data
+
