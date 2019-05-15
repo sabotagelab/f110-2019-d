@@ -3,21 +3,29 @@ pid_error:
   MAX_DISTANCE: 30.0
   DESIRED_DISTANCE: .75
 
-  CONTROL_DELAY_ESTIMATE: 0
-  minLookDistance: 1
-  lookDistanceMultiplier: 1
+  CONTROL_DELAY_ESTIMATE: 0.1
+  minLookDistance: 4 
+  lookDistanceMultiplier: 0
 
   currentMode: "left"
   currentEnumMode: 1
   currentGapAngle: 0
 
 control:
-  KP: 0.035
-  KI: 0.000
-  KD: 0.035
+  KP: 0.041
+  KI: 0.00
+  KD: 0.040
 
   MAX_VEL: 3
   MIN_VEL: 1
   MAX_STEERING_ANGLE: 20
   N: 1
   K: 0.5
+
+instruction:
+  goodGapThresh: 1
+  newInstructionGapCount: 1
+  defaultInstruction: C
+  instructionDirectory: '../explicit_instructions/'
+  instructionFile: 'levine_instructions.dat'
+  

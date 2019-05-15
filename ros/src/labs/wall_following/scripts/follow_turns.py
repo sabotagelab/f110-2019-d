@@ -8,12 +8,21 @@ from pemdas_gap_finding.msg import Gaps
 import os, sys
 import yaml
 
+DO_VISUALIZATION = True
+if DO_VISUALIZATION:
+    from visualization_msgs.msg import Marker, MarkerArray
+
 class Interface:
     def __init__(self):
         rospy.init_node("follow_turns_node", anonymous=True)
 
         self.gapSub = rospy.Subscriber("lidar_gaps", Gaps, self.determineInstruction)
         self.followPub = rospy.Publisher("follow_type", follow_type, queue_size=5)
+        self.followPubRviz = rospy.Publisher("follow_type_rviz", Marker, queue_size=5)
+
+        #visualization topics
+        if DO_VISUALIZATION:
+            self.goodGapVisualizationPub = rospy.Publisher("visualize_good_gaps", MarkerArray, queue_size=10)
 
         self.instructions = {
             "C" : 0,    #followcenter
@@ -40,10 +49,14 @@ class Interface:
         self.currentInstruction = None
         self.currentInstructionEnum = None
 
+        self.inTurnNow = False
+        self.followGapAngle = 0
+
         self.instructionQueue = queue.Queue()
 
 
-        self.instructionFile = os.path.join(os.path.dirname(__file__), self.instructionDir + self.instructionFile)
+        self.instructionFile = os.path.join(os.path.dirname(__file__), (self.instructionDir + self.instructionFile))
+        print("loading explicit instructions from {}".format(self.instructionFile))
         self.loadInstructions(self.instructionFile)
 
     def loadConfig(self):
@@ -65,15 +78,13 @@ class Interface:
             self.instructionDir = doc["instructionDirectory"]
         if "instructionFile" in doc:
             self.instructionFile = doc["instructionFile"]
-        
-
 
     def start(self):
         rospy.spin()
 
     def loadInstructions(self, file):
         with open(file, "r") as instructionData:
-            instructionString = instructionData.readLine()
+            instructionString = instructionData.readline()
             count = 1
             for inst in instructionString:
                 self.instructionQueue.put(inst)
@@ -81,16 +92,29 @@ class Interface:
                 count += 1
 
     def determineInstruction(self, data):
-        if self.countGoodGaps(data.gaps) > self.newInstructionGapCountThresh:
-            if self.currentInstruction == None:
+        if self.countGoodGaps(data) > self.newInstructionGapCountThresh:
+            self.inTurnNow = True
+            if DO_VISUALIZATION:
+                self.visualizeTurns(self.inTurnNow)
+            if not self.instructionQueue.empty() and self.currentInstruction == None:
                 self.currentInstruction = self.instructionQueue.get()
                 self.currentInstructionEnum = self.instructions[self.currentInstruction]
+            else:
+                print("Instruction Queue empty, follow_turns executing default instruction...")
+                self.currentInstruction = self.defaultInstruction
             self.follow(self.currentInstruction)
             if self.currentInstructionEnum == 3: #only if following gap
                 self.followGapAngle = self.findHeadingGapAngle(data.gaps)
         else:
+            self.inTurnNow = False
             self.follow(self.defaultInstruction)
             self.currentInstruction = None
+
+    def visualizeTurns(self, text):
+        marker = Marker()
+        marker.type = marker.TEXT_VIEW_FACING
+        marker.text = str(text)
+        self.followPubRviz.publish(marker)
 
 
     def countGoodGaps(self, gaps):
@@ -98,22 +122,54 @@ class Interface:
         std = np.std(gaps.scores)
         thresh = mean + (std * self.goodGapThresholdFactor)
 
-        criticalGaps = np.argwhere(gaps.scores > thresh)
+        criticalGapIndices = np.argwhere(gaps.scores > thresh)
 
-        return len(criticalGaps)
+        if DO_VISUALIZATION:
+            goodColor = [.1, 1.0, .1]
+            badColor = [1.0, 0, 0]
+            gapMarkers = MarkerArray()
+            gapMarkers.markers = []
+            for gdx in xrange(len(gaps.gaps)):
+                gap = gaps.gaps[gdx]
+                goodGap = gdx in criticalGapIndices
+                color = goodColor if goodGap else badColor
+                marker = Marker()
+
+                # Specify the frame in which to interpret the x,y,z coordinates. It is the laser frame.
+                marker.id = 100 + gdx
+                marker.header.frame_id = "/laser"
+                marker.pose.position.x = gap.points[1].range * np.cos(gap.points[1].angle)
+                marker.pose.position.y = gap.points[1].range * np.sin(gap.points[1].angle)
+                marker.pose.position.z = 0 # or set this to 0
+
+                marker.type = marker.SPHERE
+
+                marker.scale.x = 1.0 - (not goodGap) * .5
+                marker.scale.y = 1.0 - (not goodGap) * .5
+                marker.scale.z = 1.0 - (not goodGap) * .5
+                marker.color.r = color[0]
+                marker.color.g = color[1]
+                marker.color.b = color[2]
+                marker.color.a = 1.0
+
+                gapMarkers.markers.append(marker)
+            rospy.loginfo("Published good gap markers")
+            self.goodGapVisualizationPub.publish(gapMarkers)
+
+        return len(criticalGapIndices)
 
     #the center angle of the gap with heading closest to 135 (lidar forward)
     def findHeadingGapAngle(self, gaps):
-        centerAngle = lambda g : g.features[len(g.features)//2].angle
+        centerAngle = lambda g : g.points[1].angle
 
         bestGap = None
         bestError = 2*math.pi #cannot be off by a full circle!!!
         for gap in gaps[1:]:
             error = abs(centerAngle(gap) - self.forwardHeading)
             if error < bestError:
-                bestError = error 
+                bestError = error
                 bestGap = gap
-        
+
         return centerAngle(bestGap)
 
     def follow(self, instruction):

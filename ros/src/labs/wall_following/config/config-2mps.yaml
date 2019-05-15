@@ -7,14 +7,14 @@ pid_error:
   minLookDistance: 1
   lookDistanceMultiplier: 1
 
-  currentMode: "center"
-  currentEnumMode: 0
+  currentMode: "left"
+  currentEnumMode: 1
   currentGapAngle: 0
 
 control:
-  KP: 0.04
+  KP: 0.03
   KI: 0.000
-  KD: 0.04
+  KD: 0.03
 
   MAX_VEL: 2
   MIN_VEL: 1

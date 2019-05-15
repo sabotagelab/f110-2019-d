@@ -34,9 +34,19 @@ class Interface:
       from scipy.signal import savgol_filter
       data = np.array(self.lidarScan.ranges)
       data[np.isinf(data)] = self.lidarScan.range_max * coe
+
+      #we are going to interpolate all nan, too large, and too small values
+      data[np.isnan(data)] = -5
+      data[np.where(data <= self.lidarScan.range_min)] = -5
+      data[np.where(data >= self.lidarScan.range_max)] = -5
       #data[np.isnan(data)] = lidarMessage.range_max * coe
 
-      nanidx = np.where(np.isnan(data))[0]
+      self.interpolateNan(data, coe)
+      data = savgol_filter(data.tolist(), 11, 1)
+      return data
+
+    def interpolateNan(self, data, coe):
+      nanidx = np.where(data == -5)[0]
       if len(nanidx):
           nanchunks = []
           last = nanidx[0]
@@ -56,22 +66,29 @@ class Interface:
               nanchunks.append((first, size))
 
           chunkStart = 0
+          oneSide = False
           for c in nanchunks:
               if c[0] + c[1] >= len(data):
-                top = .1
+                top = data[c[0]-2]
+                bot = data[c[0]-1]
+                oneSide = True
+              elif c[0] <= 0:
+                top = data[c[0] + c[1]]
+                bot = data[c[0] + c[1] + 1]
+                oneSide = True
               else:
                 top = data[c[0] + c[1]]
-              if c[0] <= 0:
-                bot = .1
-              else:
                 bot = data[c[0]-1]
-              inc = (bot-top) / c[1]
+              #if we are using a one-sided gradient to interpolate, dont divide
+              inc = (bot-top) / (c[1]+1) if not oneSide else 1
               for i in xrange(chunkStart, chunkStart+c[1]):
-                  data[nanidx[i]] = data[c[0]-1] + (i-chunkStart) * inc
+                offset = (i-chunkStart) * inc
+                linearization = np.cos((i-chunkStart) * self.lidarScan.angle_increment) * offset
+                data[nanidx[i]] = min(data[c[0]-1] + offset, self.lidarScan.range_max * coe)
               chunkStart += c[1]
 
-      data = savgol_filter(data.tolist(), 11, 3)
       return data
+
 
 if __name__ == "__main__":
     iface = Interface()

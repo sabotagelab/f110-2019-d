@@ -63,7 +63,7 @@ class Interface:
     self.laserScanSub = rospy.Subscriber("filter_scan", LaserScan, self.scan_callback)
     self.followTypePub = rospy.Subscriber("follow_types", follow_type, self.changeFollowType)
     self.cmdVelSub = rospy.Subscriber("cmd_vel", drive_param, self.storeSpeed)
-  
+
     self.currentRanges = [1] * 2000
 
     self.modeEnumMap = dict([
@@ -101,7 +101,7 @@ class Interface:
 
   def setLookDistance(self):
     lookDistance = minLookDistance + lookDistanceMultiplier * (CONTROL_DELAY_ESTIMATE + self.frameTime) * currentSpeed
-  
+
   def storeSpeed(self, data):
     currentSpeed = data
 

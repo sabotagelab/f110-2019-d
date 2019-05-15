@@ -91,7 +91,6 @@ def gradientScan_np(scan, z=2, coe=1.1):
 def gradientScan(data):
     from scipy.signal import savgol_filter
     #Set inf and nan values to a value greater than the furthest scan
-    scan = savgol_filter(data.ranges,11,3)
     coe = 1.1
     scan = [(data.range_max * coe) if math.isnan(x) else x for x in scan]
     scan = [(data.range_max * coe) if math.isinf(x) else x for x in scan]
