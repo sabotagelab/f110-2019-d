@@ -118,9 +118,9 @@ class Interface:
         marker.type = marker.TEXT_VIEW_FACING
         marker.id = 0
         marker.lifetime = rospy.Duration(2)
-        marker.pose= Pose(Point(0.5, 0.5, 1.45), Quaternion(0, 0, 0, 1))
-        marker.scale = Vector3(0.06, 0.06, 0.06)
-        marker.header = Header( frame_id='base_link')
+        marker.pose= Pose(Point(-7, 7, 5), Quaternion(0, 0, 0, 1))
+        marker.scale = Vector3(1, 1, 1)
+        marker.header.frame_id = "/laser"
         marker.color.a = 1
         marker.text = str(text)
         self.followPubRviz.publish(marker)
