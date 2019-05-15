@@ -153,6 +153,12 @@ class Interface:
 
     d_tplus1 = d_tr + lookDistance*math.sin(alpha)
     error = (d_centre - d_tplus1)
+    if np.isnan(error):
+      error = 0
+    else:
+      if np.isinf(error):
+     	error = self.lidarScan.range_max
+
     return error
 
   def follow(self, desired_distance, angle):
