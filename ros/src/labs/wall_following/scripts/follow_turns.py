@@ -152,8 +152,8 @@ class Interface:
                 # Specify the frame in which to interpret the x,y,z coordinates. It is the laser frame.
                 marker.id = 100 + gdx
                 marker.header.frame_id = "/laser"
-                marker.pose.position.x = gap.points[1].range * np.cos(gap.points[1].angle)
-                marker.pose.position.y = gap.points[1].range * np.sin(gap.points[1].angle)
+                marker.pose.position.x = gap.points[1].range * np.cos(gap.points[1].angle - np.deg2rad(135))
+                marker.pose.position.y = gap.points[1].range * np.sin(gap.points[1].angle - np.deg2rad(135))
                 marker.pose.position.z = 0 # or set this to 0
 
                 marker.type = marker.SPHERE

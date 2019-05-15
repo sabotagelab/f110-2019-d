@@ -64,7 +64,7 @@ def getData(msg):
     #data = np.nan_to_num(data)
     return(data)
 
-def gradientScan_np(scan, z=2, coe=1.1):
+def gradientScan_np(scan, z=5, coe=1.1):
     jerk = np.absolute(np.diff(np.diff(scan.ranges)))
 
     mean = np.mean(jerk)
