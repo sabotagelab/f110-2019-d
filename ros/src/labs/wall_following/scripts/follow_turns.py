@@ -18,6 +18,7 @@ class Interface:
 
         self.gapSub = rospy.Subscriber("lidar_gaps", Gaps, self.determineInstruction)
         self.followPub = rospy.Publisher("follow_type", follow_type, queue_size=5)
+        self.followPubRviz = rospy.Publisher("follow_type_rviz", Marker, queue_size=5)
 
         #visualization topics
         if DO_VISUALIZATION:
@@ -55,7 +56,7 @@ class Interface:
 
 
         self.instructionFile = os.path.join(os.path.dirname(__file__), (self.instructionDir + self.instructionFile))
-        print("loading explicit instructions from {}".format(self.instructionFile)) 
+        print("loading explicit instructions from {}".format(self.instructionFile))
         self.loadInstructions(self.instructionFile)
 
     def loadConfig(self):
@@ -77,7 +78,7 @@ class Interface:
             self.instructionDir = doc["instructionDirectory"]
         if "instructionFile" in doc:
             self.instructionFile = doc["instructionFile"]
-        
+
     def start(self):
         rospy.spin()
 
@@ -93,10 +94,12 @@ class Interface:
     def determineInstruction(self, data):
         if self.countGoodGaps(data) > self.newInstructionGapCountThresh:
             self.inTurnNow = True
+            if DO_VISUALIZATION:
+                self.visualizeTurns(self.inTurnNow)
             if not self.instructionQueue.empty() and self.currentInstruction == None:
                 self.currentInstruction = self.instructionQueue.get()
                 self.currentInstructionEnum = self.instructions[self.currentInstruction]
-            else: 
+            else:
                 print("Instruction Queue empty, follow_turns executing default instruction...")
                 self.currentInstruction = self.defaultInstruction
             self.follow(self.currentInstruction)
@@ -107,6 +110,12 @@ class Interface:
             self.follow(self.defaultInstruction)
             self.currentInstruction = None
 
+    def visualizeTurns(self, text):
+        marker = Marker()
+        marker.type = marker.TEXT_VIEW_FACING
+        marker.text = str(text)
+        self.followPubRviz.publish(marker)
+
 
     def countGoodGaps(self, gaps):
         mean = np.mean(gaps.scores)
@@ -114,7 +123,7 @@ class Interface:
         thresh = mean + (std * self.goodGapThresholdFactor)
 
         criticalGapIndices = np.argwhere(gaps.scores > thresh)
-        
+
         if DO_VISUALIZATION:
             goodColor = [.1, 1.0, .1]
             badColor = [1.0, 0, 0]
@@ -138,9 +147,9 @@ class Interface:
                 marker.scale.x = 1.0 - (not goodGap) * .5
                 marker.scale.y = 1.0 - (not goodGap) * .5
                 marker.scale.z = 1.0 - (not goodGap) * .5
-                marker.color.r = color[0] 
-                marker.color.g = color[1] 
-                marker.color.b = color[2] 
+                marker.color.r = color[0]
+                marker.color.g = color[1]
+                marker.color.b = color[2]
                 marker.color.a = 1.0
 
                 gapMarkers.markers.append(marker)
@@ -158,9 +167,9 @@ class Interface:
         for gap in gaps[1:]:
             error = abs(centerAngle(gap) - self.forwardHeading)
             if error < bestError:
-                bestError = error 
+                bestError = error
                 bestGap = gap
-        
+
         return centerAngle(bestGap)
 
     def follow(self, instruction):
