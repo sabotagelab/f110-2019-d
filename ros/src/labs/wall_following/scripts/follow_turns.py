@@ -36,6 +36,7 @@ class Interface:
 
         #standard deviations to use for deciding if a gap is "significant"
         self.goodGapThresholdFactor = 2
+        self.consecutiveTurnIndicatorThresh = 5
 
         #how many "significant" gaps will trigger advance to next instruction
         self.newInstructionGapCountThresh = 1
@@ -50,6 +51,7 @@ class Interface:
         self.defaultInstructionEnum = self.instructions[self.defaultInstruction]
         self.currentInstruction = None
         self.currentInstructionEnum = None
+        self.consecutiveTurnIndicator = 0
 
         self.inTurnNow = False
         self.followGapAngle = 0
@@ -81,6 +83,8 @@ class Interface:
             self.instructionDir = doc["instructionDirectory"]
         if "instructionFile" in doc:
             self.instructionFile = doc["instructionFile"]
+        if "consecutiveTurnIndicatorThresh" in doc:
+            self.consecutiveTurnIndicator = doc["consecutiveTurnIndicatorThresh"]
 
     def start(self):
         rospy.spin()
@@ -97,7 +101,8 @@ class Interface:
     def determineInstruction(self, data):
         if DO_VISUALIZATION:
             self.visualizeTurns(self.inTurnNow)
-        if self.countGoodGaps(data) > self.newInstructionGapCountThresh:
+        self.consecutiveTurnIndicator += self.countGoodGaps(data) > self.newInstructionGapCountThresh
+        if self.consecutiveTurnIndicator > self.consecutiveTurnIndicatorThresh:
             self.inTurnNow = True
             if not self.instructionQueue.empty() and self.currentInstruction == None:
                 self.currentInstruction = self.instructionQueue.get()
@@ -109,6 +114,7 @@ class Interface:
             if self.currentInstructionEnum == 3: #only if following gap
                 self.followGapAngle = self.findHeadingGapAngle(data.gaps)
         else:
+            self.consecutiveTurnIndicator = 0
             self.inTurnNow = False
             self.follow(self.defaultInstruction)
             self.currentInstruction = None
@@ -130,7 +136,8 @@ class Interface:
         mean = np.mean(gaps.scores)
         std = np.std(gaps.scores)
         thresh = mean + (std * self.goodGapThresholdFactor)
-
+        print(gaps.scores)
+        print("AVG: {} STD: {} THRESH: {}".format(mean, std, thresh))
         criticalGapIndices = np.argwhere(gaps.scores > thresh)
 
         if DO_VISUALIZATION:

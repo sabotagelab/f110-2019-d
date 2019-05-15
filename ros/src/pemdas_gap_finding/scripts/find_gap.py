@@ -121,4 +121,4 @@ if __name__ == "__main__":
         iface = Interface(rate=5)
         iface.start()
     except rospy.ROSInterruptException:
-        rospy.logerror("ROS Interrupt Exception")
+        rospy.logerr("ROS Interrupt Exception")
