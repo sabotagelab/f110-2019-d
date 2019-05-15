@@ -130,7 +130,7 @@ class Interface:
         marker.scale = Vector3(1, 1, 1)
         marker.header.frame_id = "/laser"
         marker.color = ColorRGBA(0.0, 1.0, 0.0, 0.8)
-        marker.text = str(self.inTurnNow)
+        marker.text = 'Turn detected: '+str(self.inTurnNow)
         self.followPubRviz.publish(marker)
 
     def visualizeInstruction(self):
@@ -142,7 +142,7 @@ class Interface:
         marker.scale = Vector3(1, 1, 1)
         marker.header.frame_id = "/laser"
         marker.color = ColorRGBA(0.0, 1.0, 0.0, 0.8)
-        marker.text = str(self.currentInstruction)
+        marker.text = 'Instruction: '+str(self.currentInstruction)
         self.instructionPubRviz.publish(marker)
 
 
