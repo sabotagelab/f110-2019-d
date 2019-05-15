@@ -2,7 +2,7 @@
 import rospy
 from race.msg import drive_param
 from std_msgs.msg import Float64
-from wall_following.msg import pid_angle_input
+from wall_following.msg import pid_angle_input, follow_type
 from collections import deque
 import numpy as np
 import math
@@ -26,6 +26,10 @@ KP = doc["KP"]
 KI = doc["KI"]
 KD = doc["KD"]
 
+KP_TM = doc["KP_TM"] if "KP_TM" in doc else 1
+KI_TM = doc["KI_TM"] if "KI_TM" in doc else 1
+KD_TM = doc["KD_TM"] if "KD_TM" in doc else 1
+
 N = doc["N"]
 K = doc["K"]
 weightFunc = lambda x : N*math.exp(-K*x)
@@ -34,6 +38,7 @@ SPD_DEC_ANGLE_PERIOD = np.deg2rad(10)
 SPD_DEC_ANGLE_MAX = np.deg2rad(doc["MAX_STEERING_ANGLE"] if "MAX_STEERING_ANGLE" in doc else 20)
 MAX_VEL = doc["MAX_VEL"] #m/s
 MIN_VEL = doc["MIN_VEL"]
+
 
 A = .5 #top of decrease
 B = 0 #bottom of decrease
@@ -51,6 +56,8 @@ class Interface:
         self.drivePub = rospy.Publisher('drive_parameters', drive_param, queue_size=1)
         self.errSub = rospy.Subscriber("pid_error", pid_angle_input, self.control_callback)
 
+        self.followSub = rospy.Subscriber("follow_type", follow_type, self.setTurnMode)
+
         self.errorWindow = deque([0] * errWindowLen, maxlen=errWindowLen)
         self.etInt = 0
         self.weights = np.asarray(map(weightFunc, range(errWindowLen)))
@@ -62,6 +69,7 @@ class Interface:
         self.angle = 0
         self.lastAngle = 0
         self.lastError = 0
+        self.turning = False
 
         self.velocityMultiple = 1
         if len(sys.argv) > 2 and sys.argv[2] == "true":
@@ -74,6 +82,9 @@ class Interface:
         if not len(q) < q.maxlen:
             q.pop()
         q.appendleft(elem)
+    
+    def setTurnMode(self, data):
+        self.turning = data.turnMode
 
     def storeError(self, elem):
         self.storeQ(self.errorWindow, elem)
@@ -82,15 +93,15 @@ class Interface:
         self.storeQ(self.angleWindow, elem)
 
     def derivativeError(self, error):
-        return (error - self.lastError) / (self.currentTime - self.lastTime)
+        return (error - self.lastError) / (self.currentTime - self.lastTime) *  KD_TM
         #err = np.asarray(self.errorWindow)
         #return np.average(np.gradient(err), weights=self.weights)
 
     def integralError(self, error):
-        return (self.currentTime - self.lastTime) * error
+        return (self.currentTime - self.lastTime) * error * KI_TM
 
     def proportionError(self, error):
-        return error
+        return error * KP_TM
 
     def angleMaxVelocity(self, angle):
         #avgAngle = abs(np.average(np.asarray(self.angleWindow))) #sign does not matter since we are only determining speed

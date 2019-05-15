@@ -186,6 +186,7 @@ class Interface:
         msg = follow_type()
         msg.type = self.instructions[instruction]
         msg.gap_angle = self.followGapAngle
+        msg.turnMode = self.inTurnNow
         self.followPub.publish(msg)
 
 
