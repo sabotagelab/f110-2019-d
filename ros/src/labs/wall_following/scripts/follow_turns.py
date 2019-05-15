@@ -11,6 +11,8 @@ import yaml
 DO_VISUALIZATION = True
 if DO_VISUALIZATION:
     from visualization_msgs.msg import Marker, MarkerArray
+    from geometry_msgs.msg import Quaternion, Pose, Point, Vector3
+    from std_msgs.msg import Header
 
 class Interface:
     def __init__(self):
