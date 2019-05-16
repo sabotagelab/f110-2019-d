@@ -26,5 +26,6 @@
 
   <node pkg="wall_following" name="follow_turns_node" type="follow_turns.py" output="screen" args="$(arg config)" if="$(arg instruction)"/>
   <node pkg="pemdas_gap_finding" name="pemdas_gap_finding" type="find_gap.py" output="screen" if="$(arg instruction)"/>
+  <node pkg="gap_finding" name="visualize_gap_finding" type="visualize_gap_finding.py" output="screen" if="$(arg instruction)"/>
 
 </launch>
