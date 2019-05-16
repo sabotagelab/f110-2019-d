@@ -26,7 +26,7 @@ class Interface:
             self.goodGapVisualizationPub = rospy.Publisher("visualize_good_gaps", MarkerArray, queue_size=10)
             self.followPubRviz = rospy.Publisher("follow_type_rviz", Marker, queue_size=5)
             self.instructionPubRviz = rospy.Publisher("intruction_type_rviz", Marker, queue_size=5)
-            self.consecutivePubRviz = rospy.Published("consecutive_detects_rviz", Marker, queue_size=5)
+            self.consecutivePubRviz = rospy.Publisher("consecutive_detects_rviz", Marker, queue_size=5)
 
         self.instructions = {
             "C" : 0,    #followcenter
@@ -93,7 +93,7 @@ class Interface:
 
     def loadInstructions(self, file):
         with open(file, "r") as instructionData:
-            instructionString = instructionData.readline()
+            instructionString = instructionData.readline().strip()
             count = 1
             for inst in instructionString:
                 self.instructionQueue.put(inst)
@@ -101,7 +101,7 @@ class Interface:
                 count += 1
 
     def determineInstruction(self, data):
-        self.consecutiveTurnIndicator += 1 if self.countGoodGaps(data) > self.newInstructionGapCountThresh else 0
+        self.consecutiveTurnIndicator += 1 if self.countGoodGaps(data) > self.newInstructionGapCountThresh else -self.consecutiveTurnIndicator
         if DO_VISUALIZATION:
             self.visualizeTurns()
             self.visualizeInstruction()
@@ -111,14 +111,14 @@ class Interface:
             if not self.instructionQueue.empty() and self.currentInstruction == None:
                 self.currentInstruction = self.instructionQueue.get()
                 self.currentInstructionEnum = self.instructions[self.currentInstruction]
-            else:
+                print("EXECUTING INSTRUCTION: ", self.currentInstruction)
+            elif self.instructionQueue.empty():
                 print("Instruction Queue empty, follow_turns executing default instruction...")
                 self.currentInstruction = self.defaultInstruction
             self.follow(self.currentInstruction)
             if self.currentInstructionEnum == 3: #only if following gap
                 self.followGapAngle = self.findHeadingGapAngle(data.gaps)
         else:
-            self.consecutiveTurnIndicator = 0
             self.inTurnNow = False
             self.follow(self.defaultInstruction)
             self.currentInstruction = None
@@ -127,8 +127,9 @@ class Interface:
     def visualizeTurns(self):
         marker = Marker()
         marker.type = marker.TEXT_VIEW_FACING
+        marker.action = marker.MODIFY
         marker.id = 0
-        marker.lifetime = rospy.Duration(2)
+        marker.lifetime = rospy.rostime.Duration(secs=.2)
         marker.pose= Pose(Point(-7, 7, 5), Quaternion(0, 0, 0, 1))
         marker.scale = Vector3(1, 1, 1)
         marker.header.frame_id = "/laser"
@@ -139,9 +140,12 @@ class Interface:
     def visualizeInstruction(self):
         marker = Marker()
         marker.type = marker.TEXT_VIEW_FACING
+        marker.action = marker.MODIFY
         marker.id = 1
         marker.lifetime = rospy.Duration(2)
         marker.pose= Pose(Point(-8, 8, 5), Quaternion(0, 0, 0, 1))
+        marker.lifetime = rospy.rostime.Duration(secs=.2)
+        marker.pose= Pose(Point(-8, 7, 5), Quaternion(0, 0, 0, 1))
         marker.scale = Vector3(1, 1, 1)
         marker.header.frame_id = "/laser"
         marker.color = ColorRGBA(0.0, 1.0, 0.0, 0.8)
@@ -152,7 +156,8 @@ class Interface:
         marker = Marker()
         marker.type = marker.TEXT_VIEW_FACING
         marker.id = 2
-        marker.lifetime = rospy.Duration(2)
+        marker.action = marker.MODIFY
+        marker.lifetime = rospy.Duration(secs=.2)
         marker.pose= Pose(Point(-9, 9, 5), Quaternion(0, 0, 0, 1))
         marker.scale = Vector3(1, 1, 1)
         marker.header.frame_id = "/laser"

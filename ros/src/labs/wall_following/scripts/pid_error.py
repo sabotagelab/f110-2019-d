@@ -29,7 +29,7 @@ with open (filepath, 'r') as f:
 #ANGLE CONFIG
 MIN_ANGLE = 0
 MAX_ANGLE = 3*math.pi/2
-THETA = math.pi/16
+THETA = math.pi/4
 
 #DISTANCE CONFIG
 DESIRED_DISTANCE = doc["DESIRED_DISTANCE"]
