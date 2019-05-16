@@ -26,6 +26,7 @@ class Interface:
             self.goodGapVisualizationPub = rospy.Publisher("visualize_good_gaps", MarkerArray, queue_size=10)
             self.followPubRviz = rospy.Publisher("follow_type_rviz", Marker, queue_size=5)
             self.instructionPubRviz = rospy.Publisher("intruction_type_rviz", Marker, queue_size=5)
+            self.consecutivePubRviz = rospy.Published("consecutive_detects_rviz", Marker, queue_size=5)
 
         self.instructions = {
             "C" : 0,    #followcenter
@@ -100,10 +101,11 @@ class Interface:
                 count += 1
 
     def determineInstruction(self, data):
+        self.consecutiveTurnIndicator += 1 if self.countGoodGaps(data) > self.newInstructionGapCountThresh else 0
         if DO_VISUALIZATION:
             self.visualizeTurns()
             self.visualizeInstruction()
-        self.consecutiveTurnIndicator += 1 if self.countGoodGaps(data) > self.newInstructionGapCountThresh else 0
+            self.visualizeConsecutive()
         if self.consecutiveTurnIndicator > self.consecutiveTurnIndicatorThresh:
             self.inTurnNow = True
             if not self.instructionQueue.empty() and self.currentInstruction == None:
@@ -120,6 +122,7 @@ class Interface:
             self.inTurnNow = False
             self.follow(self.defaultInstruction)
             self.currentInstruction = None
+
 
     def visualizeTurns(self):
         marker = Marker()
@@ -138,13 +141,24 @@ class Interface:
         marker.type = marker.TEXT_VIEW_FACING
         marker.id = 1
         marker.lifetime = rospy.Duration(2)
-        marker.pose= Pose(Point(-8, 7, 5), Quaternion(0, 0, 0, 1))
+        marker.pose= Pose(Point(-8, 8, 5), Quaternion(0, 0, 0, 1))
         marker.scale = Vector3(1, 1, 1)
         marker.header.frame_id = "/laser"
         marker.color = ColorRGBA(0.0, 1.0, 0.0, 0.8)
         marker.text = 'Instruction: '+str(self.currentInstruction)
         self.instructionPubRviz.publish(marker)
 
+    def visualizeConsecutive(self):
+        marker = Marker()
+        marker.type = marker.TEXT_VIEW_FACING
+        marker.id = 2
+        marker.lifetime = rospy.Duration(2)
+        marker.pose= Pose(Point(-9, 9, 5), Quaternion(0, 0, 0, 1))
+        marker.scale = Vector3(1, 1, 1)
+        marker.header.frame_id = "/laser"
+        marker.color = ColorRGBA(0.0, 1.0, 0.0, 0.8)
+        marker.text = 'Consecutive Detects: '+ str(self.consecutiveTurnIndicator)
+        self.consecutivePubRviz.publish(marker)
 
     def countGoodGaps(self, gaps):
         scores = np.array(gaps.scores)
