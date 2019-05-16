@@ -103,7 +103,7 @@ class Interface:
         if DO_VISUALIZATION:
             self.visualizeTurns()
             self.visualizeInstruction()
-        self.consecutiveTurnIndicator += self.countGoodGaps(data) > self.newInstructionGapCountThresh
+        self.consecutiveTurnIndicator += 1 if self.countGoodGaps(data) > self.newInstructionGapCountThresh else 0
         if self.consecutiveTurnIndicator > self.consecutiveTurnIndicatorThresh:
             self.inTurnNow = True
             if not self.instructionQueue.empty() and self.currentInstruction == None:
@@ -147,12 +147,14 @@ class Interface:
 
 
     def countGoodGaps(self, gaps):
-        mean = np.mean(gaps.scores)
-        std = np.std(gaps.scores)
+        scores = np.array(gaps.scores)
+        scores = np.sqrt(scores)
+        mean = np.mean(scores)
+        std = np.std(scores)
         thresh = mean + (std * self.goodGapThresholdFactor)
-        print(gaps.scores)
+        print(scores)
         print("AVG: {} STD: {} THRESH: {}".format(mean, std, thresh))
-        criticalGapIndices = np.argwhere(gaps.scores > thresh)
+        criticalGapIndices = np.argwhere(scores > thresh)
 
         if DO_VISUALIZATION:
             goodColor = [.1, 1.0, .1]

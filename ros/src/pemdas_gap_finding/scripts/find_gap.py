@@ -11,7 +11,7 @@ import time
 
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(sys.path[0]), 'src'))
-from algorithms import processGaps, globalizePoint, gradientScan_np
+from algorithms import processGaps, globalizePoint, gradientScan_np, gradientScan_nan
 
 PUBLISH_GAP_POINTS = False
 if PUBLISH_GAP_POINTS:
@@ -21,7 +21,7 @@ class Interface:
     def __init__(self, rate=10, window=10):
         rospy.init_node('pemdas_gap_finding')
 
-        self.sub = rospy.Subscriber("/filter_scan", LaserScan, self.callback)
+        self.sub = rospy.Subscriber("/scan", LaserScan, self.callback)
         #self.subTF = rospy.Subscriber("/tf", TFMessage, self.storeTF)
         #self.subTF_static = rospy.Subscriber("/tf_static", TFMessage, self.storeTF)
 
@@ -58,7 +58,7 @@ class Interface:
         #avgData = np.average(np.asarray(self.lidarWindow), weights=self.lidarHistoryGradient)
 
 
-        gaps = gradientScan_np(lidarData)
+        gaps = gradientScan_nan(lidarData)
 
         scores, linearDistances, centerGap = processGaps(gaps)
 
