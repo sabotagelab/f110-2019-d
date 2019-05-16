@@ -124,8 +124,9 @@ class Interface:
     def visualizeTurns(self):
         marker = Marker()
         marker.type = marker.TEXT_VIEW_FACING
+        marker.action = marker.MODIFY
         marker.id = 0
-        marker.lifetime = rospy.Duration(2)
+        marker.lifetime = rospy.rostime.Duration(secs=.2)
         marker.pose= Pose(Point(-7, 7, 5), Quaternion(0, 0, 0, 1))
         marker.scale = Vector3(1, 1, 1)
         marker.header.frame_id = "/laser"
@@ -136,8 +137,9 @@ class Interface:
     def visualizeInstruction(self):
         marker = Marker()
         marker.type = marker.TEXT_VIEW_FACING
+        marker.action = marker.MODIFY
         marker.id = 1
-        marker.lifetime = rospy.Duration(2)
+        marker.lifetime = rospy.rostime.Duration(secs=.2)
         marker.pose= Pose(Point(-8, 7, 5), Quaternion(0, 0, 0, 1))
         marker.scale = Vector3(1, 1, 1)
         marker.header.frame_id = "/laser"
