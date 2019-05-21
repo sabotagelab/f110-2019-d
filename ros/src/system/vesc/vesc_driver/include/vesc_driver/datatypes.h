@@ -1,14 +1,12 @@
 /*
-	Copyright 2016 - 2019 Benjamin Vedder	benjamin@vedder.se
+	Copyright 2012-2018 Benjamin Vedder	benjamin@vedder.se
 
-	This file is part of the VESC firmware.
-
-	The VESC firmware is free software: you can redistribute it and/or modify
+	This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    The VESC firmware is distributed in the hope that it will be useful,
+    This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
@@ -22,15 +20,15 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-//#include "ch.h"
 
-// Data types
-typedef enum {
-   MC_STATE_OFF = 0,
-   MC_STATE_DETECTING,
-   MC_STATE_RUNNING,
-   MC_STATE_FULL_BRAKE,
-} mc_state;
+// CAN status sent by VESC
+typedef struct {
+	int id;
+	uint32_t rx_time;
+	float rpm;
+	float current;
+	float duty;
+} can_status_msg;
 
 typedef enum {
 	PWM_MODE_NONSYNCHRONOUS_HISW = 0, // This mode is not recommended
@@ -49,12 +47,6 @@ typedef enum {
 	SENSOR_MODE_HYBRID
 } mc_sensor_mode;
 
-typedef enum {
-	FOC_SENSOR_MODE_SENSORLESS = 0,
-	FOC_SENSOR_MODE_ENCODER,
-	FOC_SENSOR_MODE_HALL
-} mc_foc_sensor_mode;
-
 // Auxiliary output mode
 typedef enum {
 	OUT_AUX_MODE_OFF = 0,
@@ -63,19 +55,16 @@ typedef enum {
 	OUT_AUX_MODE_ON_AFTER_10S
 } out_aux_mode;
 
-// General purpose drive output mode
 typedef enum {
-	GPD_OUTPUT_MODE_NONE = 0,
-	GPD_OUTPUT_MODE_MODULATION,
-	GPD_OUTPUT_MODE_VOLTAGE,
-	GPD_OUTPUT_MODE_CURRENT
-} gpd_output_mode;
+	FOC_SENSOR_MODE_SENSORLESS = 0,
+	FOC_SENSOR_MODE_ENCODER,
+	FOC_SENSOR_MODE_HALL
+} mc_foc_sensor_mode;
 
 typedef enum {
 	MOTOR_TYPE_BLDC = 0,
 	MOTOR_TYPE_DC,
-	MOTOR_TYPE_FOC,
-	MOTOR_TYPE_GPD
+	MOTOR_TYPE_FOC
 } mc_motor_type;
 
 typedef enum {
@@ -85,62 +74,35 @@ typedef enum {
 	FAULT_CODE_DRV,
 	FAULT_CODE_ABS_OVER_CURRENT,
 	FAULT_CODE_OVER_TEMP_FET,
-	FAULT_CODE_OVER_TEMP_MOTOR,
-	FAULT_CODE_GATE_DRIVER_OVER_VOLTAGE,
-	FAULT_CODE_GATE_DRIVER_UNDER_VOLTAGE,
-	FAULT_CODE_MCU_UNDER_VOLTAGE,
-	FAULT_CODE_BOOTING_FROM_WATCHDOG_RESET,
-	FAULT_CODE_ENCODER_SPI,
-	FAULT_CODE_ENCODER_SINCOS_BELOW_MIN_AMPLITUDE,
-	FAULT_CODE_ENCODER_SINCOS_ABOVE_MAX_AMPLITUDE,
-	FAULT_CODE_FLASH_CORRUPTION,
-	FAULT_CODE_HIGH_OFFSET_CURRENT_SENSOR_1,
-	FAULT_CODE_HIGH_OFFSET_CURRENT_SENSOR_2,
-	FAULT_CODE_HIGH_OFFSET_CURRENT_SENSOR_3,
-	FAULT_CODE_UNBALANCED_CURRENTS
+	FAULT_CODE_OVER_TEMP_MOTOR
 } mc_fault_code;
 
-typedef enum {
-	CONTROL_MODE_DUTY = 0,
-	CONTROL_MODE_SPEED,
-	CONTROL_MODE_CURRENT,
-	CONTROL_MODE_CURRENT_BRAKE,
-	CONTROL_MODE_POS,
-	CONTROL_MODE_HANDBRAKE,
-	CONTROL_MODE_OPENLOOP,
-	CONTROL_MODE_OPENLOOP_PHASE,
-	CONTROL_MODE_OPENLOOP_DUTY,
-	CONTROL_MODE_OPENLOOP_DUTY_PHASE,
-	CONTROL_MODE_NONE
-} mc_control_mode;
-
-typedef enum {
-	DISP_POS_MODE_NONE = 0,
-	DISP_POS_MODE_INDUCTANCE,
-	DISP_POS_MODE_OBSERVER,
-	DISP_POS_MODE_ENCODER,
-	DISP_POS_MODE_PID_POS,
-	DISP_POS_MODE_PID_POS_ERROR,
-	DISP_POS_MODE_ENCODER_OBSERVER_ERROR
-} disp_pos_mode;
+typedef struct {
+	float v_in;
+	float temp_mos;
+	float temp_motor;
+	float current_motor;
+	float current_in;
+	float id;
+	float iq;
+	float rpm;
+	float duty_now;
+	float amp_hours;
+	float amp_hours_charged;
+	float watt_hours;
+	float watt_hours_charged;
+    int tachometer;
+    int tachometer_abs;
+    mc_fault_code fault_code;
+    float pid_pos;
+    uint8_t vesc_id;
+} mc_values;
 
 typedef enum {
 	SENSOR_PORT_MODE_HALL = 0,
 	SENSOR_PORT_MODE_ABI,
-	SENSOR_PORT_MODE_AS5047_SPI,
-	SENSOR_PORT_MODE_AD2S1205,
-	SENSOR_PORT_MODE_SINCOS
+	SENSOR_PORT_MODE_AS5047_SPI
 } sensor_port_mode;
-
-typedef struct {
-	float cycle_int_limit;
-	float cycle_int_limit_running;
-	float cycle_int_limit_max;
-	float comm_time_sum;
-	float comm_time_sum_min_rpm;
-	int32_t comms;
-	float time_at_comm;
-} mc_rpm_dep_struct;
 
 typedef enum {
 	DRV8301_OC_LIMIT = 0,
@@ -150,15 +112,12 @@ typedef enum {
 } drv8301_oc_mode;
 
 typedef enum {
-	DEBUG_SAMPLING_OFF = 0,
-	DEBUG_SAMPLING_NOW,
-	DEBUG_SAMPLING_START,
-	DEBUG_SAMPLING_TRIGGER_START,
-	DEBUG_SAMPLING_TRIGGER_FAULT,
-	DEBUG_SAMPLING_TRIGGER_START_NOSEND,
-	DEBUG_SAMPLING_TRIGGER_FAULT_NOSEND,
-	DEBUG_SAMPLING_SEND_LAST_SAMPLES
-} debug_sampling_mode;
+	MOTOR_CONTROL_DUTY = 0,
+	MOTOR_CONTROL_CURRENT,
+	MOTOR_CONTROL_CURRENT_BRAKE,
+	MOTOR_CONTROL_RPM,
+	MOTOR_CONTROL_POS
+} motor_control_mode;
 
 typedef enum {
 	CAN_BAUD_125K = 0,
@@ -166,12 +125,6 @@ typedef enum {
 	CAN_BAUD_500K,
 	CAN_BAUD_1M
 } CAN_BAUD;
-
-typedef enum {
-	BATTERY_TYPE_LIION_3_0__4_2,
-	BATTERY_TYPE_LIIRON_2_6__3_6,
-	BATTERY_TYPE_LEAD_ACID
-} BATTERY_TYPE;
 
 typedef struct {
 	// Switching and drive
@@ -204,8 +157,6 @@ typedef struct {
 	float l_max_duty;
 	float l_watt_max;
 	float l_watt_min;
-	float l_current_max_scale;
-	float l_current_min_scale;
 	// Overridden limits (Computed during runtime)
 	float lo_current_max;
 	float lo_current_min;
@@ -232,11 +183,6 @@ typedef struct {
 	float foc_encoder_offset;
 	bool foc_encoder_inverted;
 	float foc_encoder_ratio;
-	float foc_encoder_sin_offset;
-	float foc_encoder_sin_gain;
-	float foc_encoder_cos_offset;
-	float foc_encoder_cos_gain;
-	float foc_encoder_sincos_filter_constant;
 	float foc_motor_l;
 	float foc_motor_r;
 	float foc_motor_flux_linkage;
@@ -260,12 +206,6 @@ typedef struct {
 	bool foc_temp_comp;
 	float foc_temp_comp_base_temp;
 	float foc_current_filter_const;
-	// GPDrive
-	int gpd_buffer_notify_left;
-	int gpd_buffer_interpol;
-	float gpd_current_filter_const;
-	float gpd_current_kp;
-	float gpd_current_ki;
 	// Speed PID
 	float s_pid_kp;
 	float s_pid_ki;
@@ -298,13 +238,6 @@ typedef struct {
 	float m_dc_f_sw;
 	float m_ntc_motor_beta;
 	out_aux_mode m_out_aux_mode;
-	// Setup info
-	uint8_t si_motor_poles;
-	float si_gear_ratio;
-	float si_wheel_diameter;
-	BATTERY_TYPE si_battery_type;
-	int si_battery_cells;
-	float si_battery_ah;
 } mc_configuration;
 
 // Applications to use
@@ -365,7 +298,6 @@ typedef enum {
 	ADC_CTRL_TYPE_CURRENT_REV_CENTER,
 	ADC_CTRL_TYPE_CURRENT_REV_BUTTON,
 	ADC_CTRL_TYPE_CURRENT_REV_BUTTON_BRAKE_ADC,
-	ADC_CTRL_TYPE_CURRENT_REV_BUTTON_BRAKE_CENTER,
 	ADC_CTRL_TYPE_CURRENT_NOREV_BRAKE_CENTER,
 	ADC_CTRL_TYPE_CURRENT_NOREV_BRAKE_BUTTON,
 	ADC_CTRL_TYPE_CURRENT_NOREV_BRAKE_ADC,
@@ -480,29 +412,14 @@ typedef struct {
 	bool send_crc_ack;
 } nrf_config;
 
-// CAN status modes
-typedef enum {
-	CAN_STATUS_DISABLED = 0,
-	CAN_STATUS_1,
-	CAN_STATUS_1_2,
-	CAN_STATUS_1_2_3,
-	CAN_STATUS_1_2_3_4
-} CAN_STATUS_MODE;
-
 typedef struct {
 	// Settings
 	uint8_t controller_id;
 	uint32_t timeout_msec;
 	float timeout_brake_current;
-	CAN_STATUS_MODE send_can_status;
+	bool send_can_status;
 	uint32_t send_can_status_rate_hz;
 	CAN_BAUD can_baud_rate;
-	bool pairing_done;
-	bool permanent_uart_enabled;
-
-	// UAVCAN
-	bool uavcan_enable;
-	uint8_t uavcan_esc_index;
 
 	// Application to use
 	app_use app_to_use;
@@ -562,219 +479,7 @@ typedef enum {
 	COMM_FORWARD_CAN,
 	COMM_SET_CHUCK_DATA,
 	COMM_CUSTOM_APP_DATA,
-	COMM_NRF_START_PAIRING,
-	COMM_GPD_SET_FSW,
-	COMM_GPD_BUFFER_NOTIFY,
-	COMM_GPD_BUFFER_SIZE_LEFT,
-	COMM_GPD_FILL_BUFFER,
-	COMM_GPD_OUTPUT_SAMPLE,
-	COMM_GPD_SET_MODE,
-	COMM_GPD_FILL_BUFFER_INT8,
-	COMM_GPD_FILL_BUFFER_INT16,
-	COMM_GPD_SET_BUFFER_INT_SCALE,
-	COMM_GET_VALUES_SETUP,
-	COMM_SET_MCCONF_TEMP,
-	COMM_SET_MCCONF_TEMP_SETUP,
-	COMM_GET_VALUES_SELECTIVE,
-	COMM_GET_VALUES_SETUP_SELECTIVE,
-	COMM_EXT_NRF_PRESENT,
-	COMM_EXT_NRF_ESB_SET_CH_ADDR,
-	COMM_EXT_NRF_ESB_SEND_DATA,
-	COMM_EXT_NRF_ESB_RX_DATA,
-	COMM_EXT_NRF_SET_ENABLED,
-	COMM_DETECT_MOTOR_FLUX_LINKAGE_OPENLOOP,
-	COMM_DETECT_APPLY_ALL_FOC,
-	COMM_JUMP_TO_BOOTLOADER_ALL_CAN,
-	COMM_ERASE_NEW_APP_ALL_CAN,
-	COMM_WRITE_NEW_APP_DATA_ALL_CAN,
-	COMM_PING_CAN,
-	COMM_APP_DISABLE_OUTPUT,
-	COMM_TERMINAL_CMD_SYNC,
-	COMM_GET_IMU_DATA,
-	COMM_BM_CONNECT,
-	COMM_BM_ERASE_FLASH_ALL,
-	COMM_BM_WRITE_FLASH,
-	COMM_BM_REBOOT,
-	COMM_BM_DISCONNECT
+	COMM_NRF_START_PAIRING
 } COMM_PACKET_ID;
-
-// CAN commands
-typedef enum {
-	CAN_PACKET_SET_DUTY = 0,
-	CAN_PACKET_SET_CURRENT,
-	CAN_PACKET_SET_CURRENT_BRAKE,
-	CAN_PACKET_SET_RPM,
-	CAN_PACKET_SET_POS,
-	CAN_PACKET_FILL_RX_BUFFER,
-	CAN_PACKET_FILL_RX_BUFFER_LONG,
-	CAN_PACKET_PROCESS_RX_BUFFER,
-	CAN_PACKET_PROCESS_SHORT_BUFFER,
-	CAN_PACKET_STATUS,
-	CAN_PACKET_SET_CURRENT_REL,
-	CAN_PACKET_SET_CURRENT_BRAKE_REL,
-	CAN_PACKET_SET_CURRENT_HANDBRAKE,
-	CAN_PACKET_SET_CURRENT_HANDBRAKE_REL,
-	CAN_PACKET_STATUS_2,
-	CAN_PACKET_STATUS_3,
-	CAN_PACKET_STATUS_4,
-	CAN_PACKET_PING,
-	CAN_PACKET_PONG,
-	CAN_PACKET_DETECT_APPLY_ALL_FOC,
-	CAN_PACKET_DETECT_APPLY_ALL_FOC_RES,
-	CAN_PACKET_CONF_CURRENT_LIMITS,
-	CAN_PACKET_CONF_STORE_CURRENT_LIMITS,
-	CAN_PACKET_CONF_CURRENT_LIMITS_IN,
-	CAN_PACKET_CONF_STORE_CURRENT_LIMITS_IN,
-	CAN_PACKET_CONF_FOC_ERPMS,
-	CAN_PACKET_CONF_STORE_FOC_ERPMS
-} CAN_PACKET_ID;
-
-// Logged fault data
-typedef struct {
-	mc_fault_code fault;
-	float current;
-	float current_filtered;
-	float voltage;
-	float gate_driver_voltage;
-	float duty;
-	float rpm;
-	int tacho;
-	int cycles_running;
-	int tim_val_samp;
-	int tim_current_samp;
-	int tim_top;
-	int comm_step;
-	float temperature;
-	int drv8301_faults;
-} fault_data;
-
-// External LED state
-typedef enum {
-	LED_EXT_OFF = 0,
-	LED_EXT_NORMAL,
-	LED_EXT_BRAKE,
-	LED_EXT_TURN_LEFT,
-	LED_EXT_TURN_RIGHT,
-	LED_EXT_BRAKE_TURN_LEFT,
-	LED_EXT_BRAKE_TURN_RIGHT,
-	LED_EXT_BATT
-} LED_EXT_STATE;
-
-typedef struct {
-	int js_x;
-	int js_y;
-	int acc_x;
-	int acc_y;
-	int acc_z;
-	bool bt_c;
-	bool bt_z;
-	bool rev_has_state;
-	bool is_rev;
-} chuck_data;
-
-/*
-typedef struct {
-	int id;
-	systime_t rx_time;
-	float rpm;
-	float current;
-	float duty;
-} can_status_msg;
-
-typedef struct {
-	int id;
-	systime_t rx_time;
-	float amp_hours;
-	float amp_hours_charged;
-} can_status_msg_2;
-
-typedef struct {
-	int id;
-	systime_t rx_time;
-	float watt_hours;
-	float watt_hours_charged;
-} can_status_msg_3;
-
-typedef struct {
-	int id;
-	systime_t rx_time;
-	float temp_fet;
-	float temp_motor;
-	float current_in;
-	float pid_pos_now;
-} can_status_msg_4;
-*/
-typedef struct {
-	uint8_t js_x;
-	uint8_t js_y;
-	bool bt_c;
-	bool bt_z;
-	bool bt_push;
-	bool rev_has_state;
-	bool is_rev;
-	float vbat;
-} mote_state;
-
-typedef enum {
-	MOTE_PACKET_BATT_LEVEL = 0,
-	MOTE_PACKET_BUTTONS,
-	MOTE_PACKET_ALIVE,
-	MOTE_PACKET_FILL_RX_BUFFER,
-	MOTE_PACKET_FILL_RX_BUFFER_LONG,
-	MOTE_PACKET_PROCESS_RX_BUFFER,
-	MOTE_PACKET_PROCESS_SHORT_BUFFER,
-	MOTE_PACKET_PAIRING_INFO
-} MOTE_PACKET;
-
-typedef struct {
-	float v_in;
-	float temp_mos1;
-	float temp_mos2;
-	float temp_mos3;
-	float temp_mos4;
-    float temp_mos5;
-    float temp_mos6;
-    float temp_pcb;
-    float current_motor;
-    float current_in;
-    float rpm;
-    float duty_now;
-    float amp_hours;
-    float amp_hours_charged;
-    float watt_hours;
-    float watt_hours_charged;
-    int tachometer;
-    int tachometer_abs;
-    mc_fault_code fault_code;
-} mc_values;
-
-typedef enum {
-	NRF_PAIR_STARTED = 0,
-	NRF_PAIR_OK,
-	NRF_PAIR_FAIL
-} NRF_PAIR_RES;
-
-// Orientation data
-typedef struct {
-	float q0;
-	float q1;
-	float q2;
-	float q3;
-	float integralFBx;
-	float integralFBy;
-	float integralFBz;
-	float accMagP;
-	int initialUpdateDone;
-} ATTITUDE_INFO;
-
-// Custom EEPROM variables
-typedef union {
-	uint32_t as_u32;
-	int32_t as_i32;
-	float as_float;
-} eeprom_var;
-
-#define EEPROM_VARS_HW			64
-#define EEPROM_VARS_CUSTOM		64
 
 #endif /* DATATYPES_H_ */

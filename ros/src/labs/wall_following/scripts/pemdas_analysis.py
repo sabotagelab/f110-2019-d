@@ -25,7 +25,7 @@ class Interface:
         if data.pid_error < self.pidErrMin:
             self.pidErrMin = data.pid_error
 
-        self.pidErrAvg = (self.pidErrAvg * (self.pidErrCount-1/self.pidErrCount)) + (data.pid_error / self.pidErrCount)
+        self.pidErrAvg = (self.pidErrAvg * (self.pidErrCount-1) + data.pid_error) / self.pidErrCount
         
         msg = pid_meta()
         msg.error_avg = self.pidErrAvg
