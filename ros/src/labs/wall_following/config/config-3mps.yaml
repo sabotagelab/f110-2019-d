@@ -7,7 +7,7 @@ pid_error:
   minLookDistance: 5 
   lookDistanceMultiplier: 0
 
-  currentMode: "left"
+  currentMode: "center"
   currentEnumMode: 1
   currentGapAngle: 0
 
@@ -16,16 +16,16 @@ control:
   KI: 0.00
   KD: 0.029
 
-  MAX_VEL: 3
+  MAX_VEL: 2.5
   MIN_VEL: 1
   MAX_STEERING_ANGLE: 20
   N: 1
   K: 0.5
 
 instruction:
-  goodGapThresh: .4
+  goodGapThresh: .2
   newInstructionGapCount: 1
   defaultInstruction: C
   instructionDirectory: '../explicit_instructions/'
-  instructionFile: 'levine_instructions.dat'
+  instructionFile: 'test.dat'
   

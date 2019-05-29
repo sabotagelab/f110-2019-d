@@ -22,7 +22,7 @@
   <node pkg="wall_following" name="sim_connector_node" type="sim_connector.py" output="screen" unless="$(arg onboard)"/>
   <node pkg="wall_following" name="dead_mans_switch" type="dead_mans_switch.py" output="screen" if="$(arg onboard)"/>
 
-  <node pkg="wall_following" name="pid_meta_node" type="pemdas_analysis.py" output="screen" unless="$(arg onboard)"/> 
+  <node pkg="wall_following" name="pid_meta_node" type="pemdas_analysis.py" output="screen"/> 
 
   <node pkg="wall_following" name="follow_turns_node" type="follow_turns.py" output="screen" args="$(arg config)" if="$(arg instruction)"/>
   <node pkg="pemdas_gap_finding" name="pemdas_gap_finding" type="find_gap.py" output="screen" if="$(arg instruction)"/>
