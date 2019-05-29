@@ -1,7 +1,7 @@
 
 # erpm (electrical rpm) = speed_to_erpm_gain * speed (meters / second) + speed_to_erpm_offset
 speed_to_erpm_gain: 1
-speed_to_erpm_offset: 0.0
+speed_to_erpm_offset: 0.04
 
 tachometer_ticks_to_meters_gain: 0.00225
 # servo smoother - limits rotation speed and smooths anything above limit
