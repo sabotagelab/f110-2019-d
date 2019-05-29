@@ -5,20 +5,23 @@ from race.msg import drive_param
 from geometry_msgs.msg import PoseStamped
 import math
 import numpy as np
+import numpy.ma as ma
 from numpy import linalg as LA
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 import tf
 import csv
 import os
+import time
 
 #############
 # CONSTANTS #
 #############
 
-LOOKAHEAD_DISTANCE = 1.5 # meters
+LOOKAHEAD_DISTANCE = .5 # meters
 VELOCITY = 0.5 # m/s
 FOV = 120
 
+tfListener = None
 
 ###########
 # GLOBALS #
@@ -26,17 +29,17 @@ FOV = 120
 
 # Import waypoints.csv into a list (path_points)
 dirname = os.path.dirname(__file__)
-filename = os.path.join(dirname, '../waypoints/levine-waypoints.csv')
-with open(filename) as f:
+filename = os.path.join(dirname, '~/rcws/logs/test-path.csv')
+filepath = '/home/nvidia/rcws/logs/test-path.csv'
+with open(filepath) as f:
     path_points = [tuple(line) for line in csv.reader(f)]
 
 # Turn path_points into a list of floats to eliminate the need for casts in the code below.
-path_points = [(float(point[0]), float(point[1]), float(point[2])) for point in path_points]
-
+path_points = [[float(point[0]), float(point[1])] for point in path_points]
+print(path_points)
 # Publisher for 'drive_parameters' (speed and steering angle)
 pub = rospy.Publisher('drive_parameters', drive_param, queue_size=1)
 
-tfListener = tf.TransformListener()
 
 #############
 # FUNCTIONS #
@@ -59,9 +62,12 @@ def callback(data):
     #drivePub = rospy.Publisher('drive_parameters', drive_param, queue_size=1)
     #PoseSub = rospy.Subscriber("/vesc/odom", PoseStamped, self.callback)
 
+    worldToLaser = tf.lookupTransform('/world','/laser',rospy.Time(0))
+    toLaserFrame = np.asarray(worldToLaser[0][:2])
+
+    pathPointsLaser = np.asarray(path_points) - toLaserFrame
     #get x, y and yaw
-    x = data.pose.position.x
-    y = data.pose.position.y
+    carPositionWorld = np.array([ data.pose.position.x, data.pose.position.y ])
 
     quaternion = (
         data.pose.orientation.x,
@@ -72,36 +78,33 @@ def callback(data):
     euler = euler_from_quaternion(quaternion)
     yaw = euler[2]
 
-    transferQT = tfListener.lookupTransform('/map', '/laser', rospy.Time(0))
 
     # 2. Find the path point closest to the vehicle that is >= 1 lookahead distance from vehicle's current location.
-    min_dist = 1000
-    goalX = 0
-    goalY = 0
-    for i in range(len(path_points)):
-        if path_points[i][0] <= transferQT[0]:
-            continue
-        d = dist([x, y], path_points[i])
-        if d >= LOOKAHEAD_DISTANCE and d < min_dist:
-                canX = path_points[index][0] + transferQT[0]
-                canY = path_points[index][1] + transferQT[1]
+    d = np.linalg.norm(pathPointsLaser - (carPositionWorld-toLaserFrame), axis=1)
+    print(d[::10])
+    mask = np.ones(len(d), dtype=int)
+    mask[np.where(np.logical_or((d >= LOOKAHEAD_DISTANCE), (pathPointsLaser[:,0] < 0)))] = 0
+    viable = ma.masked_array(d, mask=mask)
+    waypoint = pathPointsLaser[viable.argmin()]
 
-                canAngle = np.arctan(canY/canX)
-                if abs(canAngle) < np.deg2rad(FOV // 2):
-                    angle = canAngle
-                    goalX = canX
-                    goalY = canY
-                    min_dist = d
-                    index = i
+    goalX = waypoint[0]
+    goalY = waypoint[1]
+    angle = np.arctan(goalY/goalX)
 
+
+    #    print("CURRENT POS")
+    #    print("\t X: " + str(x))
+    #    print("\t Y: " + str(y))
+    #    print("\t facing: " + str(yaw))
+
+    #    print("WAYPOINT")
+    #    print("\t X: " + str(goalX))
+    #    print("\t Y: " + str(goalY))
+    print("\t at angle: " + str(angle))
     #path_points[index] is the point closest to the vehicle
-
-
 
     # 3. Transform the goal point to vehicle coordinates.
     # THIS IS DONE IN LOOP
-
-
 
     # 4. Calculate the curvature = 1/r = 2x/l^2
     # The curvature is transformed into steering wheel angle by the vehicle on board controller.
@@ -112,10 +115,11 @@ def callback(data):
 
     msg = drive_param()
     msg.velocity = VELOCITY
-    msg.angle = angle
+    msg.angle = -1*angle
     pub.publish(msg)
 
 if __name__ == '__main__':
     rospy.init_node('pure_pursuit')
     rospy.Subscriber('/pf/viz/inferred_pose', PoseStamped, callback, queue_size=1)
+    tfListener = tf.TransformListener()
     rospy.spin()

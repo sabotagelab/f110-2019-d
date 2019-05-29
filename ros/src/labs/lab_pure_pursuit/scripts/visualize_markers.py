@@ -10,8 +10,8 @@ import os
 import csv
 import pdb
 
-dirname = os.path.dirname(__file__)
-filename = os.path.join(dirname, '../waypoints/levine-waypoints.csv')
+filename = "/home/nvidia/rcws/logs/test-path.csv"
+
 with open(filename) as f:
 	path_points = [tuple(line) for line in csv.reader(f)]
 
