@@ -3,6 +3,7 @@
 import rospy
 from race.msg import drive_param
 from geometry_msgs.msg import PoseStamped
+from visualization_msgs.msg import Marker
 import math
 import numpy as np
 import numpy.ma as ma
@@ -17,12 +18,13 @@ import time
 # CONSTANTS #
 #############
 
-LOOKAHEAD_DISTANCE = 1.0 # meters
+LOOKAHEAD_DISTANCE = .75 # meters
 VELOCITY = 1.0 # m/s
 FOV = 120
-WHEELBASE_CM = 32.6
+WHEELBASE = .326
 
 tfListener = None
+waypointViz = None
 
 ###########
 # GLOBALS #
@@ -83,24 +85,34 @@ def callback(data):
     d = np.linalg.norm(pathPointsLaser - (carPositionWorld-toLaserFrame), axis=1)
     print(d[::10])
     mask = np.ones(len(d), dtype=int)
-    mask[np.where(np.logical_or((d >= LOOKAHEAD_DISTANCE), (pathPointsLaser[:,0] > 0)))] = 0
+    mask[np.where(np.logical_and((d >= LOOKAHEAD_DISTANCE), (pathPointsLaser[:,0] > 0)))] = 0
     viable = ma.masked_array(d, mask=mask)
     waypointIndex = viable.argmin()
     waypoint = pathPointsLaser[waypointIndex]
 
     goalX = waypoint[0]
     goalY = waypoint[1]
-
-    invCurvature = (2*np.abs(goalY)) / d[waypointIndex]**2
-    angle = np.arcsin(invCurvature * WHEELBASE_CM)
+ 
+    r = d[waypointIndex]**2 / (2 * np.abs(goalY))
+#   a = WHEELBASE/2
+#   b = np.sqrt(r**2 - a**2) + r
+#   c = np.sqrt(a**2 + b**2)
+#   angle = np.arccos(a/ c)
+    #angle = np.arctan(goalY/goalX) + 3.1415/2
+    angle = -1 * np.arcsin(WHEELBASE/r) * np.sign(goalY)
 #    print("CURRENT POS")
     #    print("\t X: " + str(x))
     #    print("\t Y: " + str(y))
     #    print("\t facing: " + str(yaw))
 
     #print("WAYPOINT")
+#   print("\t A: " + str(a))
+#   print("\t C: " + str(c))
+#   print("\t B: " + str(b))
+    print("\t R: " + str(r))
     print("\t X: " + str(goalX))
     print("\t Y: " + str(goalY))
+    print("\t Distance: " + str(d[waypointIndex]))
     print("\t at angle: " + str(angle))
     #path_points[index] is the point closest to the vehicle
 
@@ -110,17 +122,33 @@ def callback(data):
     # 4. Calculate the curvature = 1/r = 2x/l^2
     # The curvature is transformed into steering wheel angle by the vehicle on board controller.
     # Hint: You may need to flip to negative because for the VESC a right steering angle has a negative value.
-
+    marker = Marker()
+    marker.header.frame_id = "/map"
+    marker.type = marker.SPHERE
+    marker.action = marker.ADD
+    marker.scale.x = 0.3
+    marker.scale.y = 0.3
+    marker.scale.z = 0.3
+    marker.color.a = 0.0
+    marker.color.r = 1.0
+    marker.color.g = 0.0
+    marker.color.b = 0.0
+    marker.pose.orientation.w = 1.0
+    marker.pose.position.x = goalX + toLaserFrame[0]
+    marker.pose.position.y = goalY + toLaserFrame[1]
+    marker.pose.position.z = 0
+    waypointViz.publish(marker)
 
     angle = np.clip(angle, -0.4189, 0.4189) # 0.4189 radians = 24 degrees because car can only turn 24 degrees max
 
     msg = drive_param()
     msg.velocity = VELOCITY
-    msg.angle = -1*angle
+    msg.angle = angle
     pub.publish(msg)
 
 if __name__ == '__main__':
     rospy.init_node('pure_pursuit')
     rospy.Subscriber('/pf/viz/inferred_pose', PoseStamped, callback, queue_size=1)
+    waypointViz = rospy.Publisher('/waypoint_marker', Marker)
     tfListener = tf.TransformListener()
     rospy.spin()
