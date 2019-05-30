@@ -3,7 +3,7 @@
 	<include file="$(find racecar)/launch/teleop.launch"/>
   	
   	<!-- Run map server -->
-	<arg name="map_file" default="$(find localization)/maps/levine.yaml"/>
+	<arg name="map_file" default="$(find localization)/maps/dearborn.yaml"/>
 	<node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />
 
   	<node pkg="tf2_ros" type="static_transform_publisher" name="base_footprint_to_laser" args="0 0 0 0 0 0 			base_footprint laser" output="screen"/>
@@ -19,14 +19,14 @@
 		pose: {
 			pose: {
 				position: {
-					x: 1.91, 
-					y: -0.17, 
+					x: 28.5,
+					y: 14.0, 
 					z: 0.0}, 
 				orientation: {
 					x: 0.0,
 					y: 0.0,
-					z: -0.375239,
-					w: 0.926928}
+					z: -0.9992,
+					w: 0.039019}
 			}
 		}
 	}'" />
