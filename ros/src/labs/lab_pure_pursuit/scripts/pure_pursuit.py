@@ -62,8 +62,8 @@ def callback(data):
     #drivePub = rospy.Publisher('drive_parameters', drive_param, queue_size=1)
     #PoseSub = rospy.Subscriber("/vesc/odom", PoseStamped, self.callback)
 
-    worldToLaser = tf.lookupTransform('/world','/laser',rospy.Time(0))
-    toLaserFrame = np.asarray(worldToLaser[0][:2])
+    mapToLaser = tfListener.lookupTransform('/map','/laser',rospy.Time(0))
+    toLaserFrame = np.asarray(mapToLaser[0][:2])
 
     pathPointsLaser = np.asarray(path_points) - toLaserFrame
     #get x, y and yaw
