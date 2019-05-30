@@ -5,6 +5,7 @@ from race.msg import drive_param
 from geometry_msgs.msg import PoseStamped
 import math
 import numpy as np
+import numpy.ma as ma
 from numpy import linalg as LA
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 import tf
@@ -15,8 +16,8 @@ import os
 # CONSTANTS #
 #############
 
-LOOKAHEAD_DISTANCE = 1.5 # meters
-VELOCITY = 0.5 # m/s
+LOOKAHEAD_DISTANCE = 0.5 # meters
+VELOCITY = 1.0 # m/s
 FOV = 120
 
 
