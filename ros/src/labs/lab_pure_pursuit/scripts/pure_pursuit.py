@@ -17,9 +17,10 @@ import time
 # CONSTANTS #
 #############
 
-LOOKAHEAD_DISTANCE = .5 # meters
-VELOCITY = 0.5 # m/s
+LOOKAHEAD_DISTANCE = 1.0 # meters
+VELOCITY = 1.0 # m/s
 FOV = 120
+WHEELBASE_CM = 32.6
 
 tfListener = None
 
@@ -78,28 +79,28 @@ def callback(data):
     euler = euler_from_quaternion(quaternion)
     yaw = euler[2]
 
-
     # 2. Find the path point closest to the vehicle that is >= 1 lookahead distance from vehicle's current location.
     d = np.linalg.norm(pathPointsLaser - (carPositionWorld-toLaserFrame), axis=1)
     print(d[::10])
     mask = np.ones(len(d), dtype=int)
     mask[np.where(np.logical_or((d >= LOOKAHEAD_DISTANCE), (pathPointsLaser[:,0] > 0)))] = 0
     viable = ma.masked_array(d, mask=mask)
-    waypoint = pathPointsLaser[viable.argmin()]
+    waypointIndex = viable.argmin()
+    waypoint = pathPointsLaser[waypointIndex]
 
     goalX = waypoint[0]
     goalY = waypoint[1]
-    angle = np.arctan(goalY/goalX)
 
-
-    #    print("CURRENT POS")
+    invCurvature = (2*np.abs(goalY)) / d[waypointIndex]**2
+    angle = np.arcsin(invCurvature * WHEELBASE_CM)
+#    print("CURRENT POS")
     #    print("\t X: " + str(x))
     #    print("\t Y: " + str(y))
     #    print("\t facing: " + str(yaw))
 
-    #    print("WAYPOINT")
-    #    print("\t X: " + str(goalX))
-    #    print("\t Y: " + str(goalY))
+    #print("WAYPOINT")
+    print("\t X: " + str(goalX))
+    print("\t Y: " + str(goalY))
     print("\t at angle: " + str(angle))
     #path_points[index] is the point closest to the vehicle
 
