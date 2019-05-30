@@ -83,7 +83,7 @@ def callback(data):
     d = np.linalg.norm(pathPointsLaser - (carPositionWorld-toLaserFrame), axis=1)
     print(d[::10])
     mask = np.ones(len(d), dtype=int)
-    mask[np.where(np.logical_or((d >= LOOKAHEAD_DISTANCE), (pathPointsLaser[:,0] < 0)))] = 0
+    mask[np.where(np.logical_or((d >= LOOKAHEAD_DISTANCE), (pathPointsLaser[:,0] > 0)))] = 0
     viable = ma.masked_array(d, mask=mask)
     waypoint = pathPointsLaser[viable.argmin()]
 
