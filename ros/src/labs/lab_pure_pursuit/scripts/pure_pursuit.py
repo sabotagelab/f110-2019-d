@@ -3,6 +3,8 @@
 import rospy
 from race.msg import drive_param
 from geometry_msgs.msg import PoseStamped
+from visualization_msgs.msg import Marker
+from nav_msgs.msg import Odometry
 import math
 import numpy as np
 import numpy.ma as ma
@@ -13,114 +15,148 @@ import csv
 import os
 import time
 
-#############
-# CONSTANTS #
-#############
+class Interface:
 
-LOOKAHEAD_DISTANCE = 1.0 # meters
-VELOCITY = 1.0 # m/s
-FOV = 120
-WHEELBASE_CM = 32.6
+    def __init__(self):
+        rospy.init_node('pure_pursuit')
 
-tfListener = None
+        self.LOOKAHEAD_DISTANCE = .75 #meters
+        self.VELOCITY = 1.0 #m/s
+        self.FOV = 120 #where to look for new points
+        self.FOV_MULT = 1 / np.tan( np.deg2rad(self.FOV) / 2 ) # constant for calculating critical x-value
+        self.WHEELBASE = .326 #meters
+        self.MAX_TURN_ANGLE = .4189
 
-###########
-# GLOBALS #
-###########
+        self.LOCALIZATION_DELAY = .1 #lag from localization in seconds
 
-# Import waypoints.csv into a list (path_points)
-dirname = os.path.dirname(__file__)
-filename = os.path.join(dirname, '~/rcws/logs/test-path.csv')
-filepath = '/home/nvidia/rcws/logs/test-path.csv'
-with open(filepath) as f:
-    path_points = [tuple(line) for line in csv.reader(f)]
+        #EXPERIMENTAL VELOCITY SETTINGS
+        self.MAX_VELOCITY = 2.0 #m/s
+        self.MIN_VELOCITY = 1.0 #m/s
+        self.VELOCITY_ANGLE_RELATION = (self.MAX_VELOCITY-self.MIN_VELOCITY) / self.MAX_TURN_ANGLE
+        self.VELOCITY_ANGLE_RELATION_SQR = (self.MAX_VELOCITY**2-self.MIN_VELOCITY**2) / self.MAX_TURN_ANGLE
 
-# Turn path_points into a list of floats to eliminate the need for casts in the code below.
-path_points = [[float(point[0]), float(point[1])] for point in path_points]
-print(path_points)
-# Publisher for 'drive_parameters' (speed and steering angle)
-pub = rospy.Publisher('drive_parameters', drive_param, queue_size=1)
+        self.waypointFilepath = '/home/nvidia/rcws/logs/test-path.csv'
 
+        self.poseSub = rospy.Subscriber('/pf/viz/inferred_pose', PoseStamped, self.localizeCallback, queue_size=1)
+        self.odomSub = rospy.Subscriber('/vesc/odom', Odometry, self.storeOdometry, queue_size=5)
+        self.drivePub = rospy.Publisher('drive_parameters', drive_param, queue_size=1)
+        self.waypointPub = rospy.Publisher('/waypoint_marker', Marker)
+        self.tfListener = tf.TransformListener()
 
-#############
-# FUNCTIONS #
-#############
+    def start(self):
+        rospy.spin()
+    
+    def storeOdometry(self, odom):
+        self.currentVelocity = (odom.pose.twist.twist.linear.x, odom.pose.twist.twist.linear.y)
+        self.currentSpeed = np.linalg.norm(self.currentVelocity)
 
-# Computes the Euclidean distance between two 2D points p1 and p2.
-def dist(p1, p2):
-    return np.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
+    def loadWaypoints(self):
 
-# Input data is PoseStamped message from topic /pf/viz/inferred_pose.
-# Runs pure pursuit and publishes velocity and steering angle.
-def callback(data):
+        dirname = os.path.dirname(__file__)
+        filename = os.path.join(dirname, '~/rcws/logs/test-path.csv')
+        with open(self.waypointFilepath) as f:
+            path_points = [tuple(line) for line in csv.reader(f)]
 
-    # Note: These following numbered steps below are taken from R. Craig Coulter's paper on pure pursuit.
+        # Turn path_points into a list of floats to eliminate the need for casts in the code below.
+        self.path_points = [[float(point[0]), float(point[1])] for point in path_points]
+        print(path_points)
+        # Publisher for 'drive_parameters' (speed and steering angle)
 
-    # 1. Determine the current location of the vehicle (we are subscribed to vesc/odom)
-    # Hint: Read up on PoseStamped message type in ROS to determine how to extract x, y, and yaw.
+    def localizeCallback(self, data):
+        mapToLaser = self.tfListener.lookupTransform('/map','/laser',rospy.Time(0))
+        
+        toLaserTransMatrix = np.asarray(mapToLaser[0][:2])
 
-    #rospy.init_node('pure_pursuit_node', anonymous=True)
-    #drivePub = rospy.Publisher('drive_parameters', drive_param, queue_size=1)
-    #PoseSub = rospy.Subscriber("/vesc/odom", PoseStamped, self.callback)
+        carOrientQTMap = (
+            data.pose.orientation.x,
+            data.pose.orientation.y,
+            data.pose.orientation.z,
+            data.pose.orientation.w
+        )
 
-    worldToLaser = tfListener.lookupTransform('/world','/laser',rospy.Time(0))
-    toLaserFrame = np.asarray(worldToLaser[0][:2])
+        carYawMap = euler_from_quaternion(carOrientQTMap)[2] #yaw
 
-    pathPointsLaser = np.asarray(path_points) - toLaserFrame
-    #get x, y and yaw
-    carPositionWorld = np.array([ data.pose.position.x, data.pose.position.y ])
+        toLaserRotMatrix = np.array([
+            [ np.cos(carYawMap), -np.sin(carYawMap) ],
+            [ np.sin(carYawMap), np.cos(carYawMap) ]
+        ])
 
-    quaternion = (
-        data.pose.orientation.x,
-        data.pose.orientation.y,
-        data.pose.orientation.z,
-        data.pose.orientation.w)
+        toLaser = lambda coords : (coords - toLaserTransMatrix).dot(toLaserRotMatrix)
 
-    euler = euler_from_quaternion(quaternion)
-    yaw = euler[2]
+        carPositionMap = np.array([
+            data.pose.position.x,
+            data.pose.position.y
+        ])
 
-    # 2. Find the path point closest to the vehicle that is >= 1 lookahead distance from vehicle's current location.
-    d = np.linalg.norm(pathPointsLaser - (carPositionWorld-toLaserFrame), axis=1)
-    print(d[::10])
-    mask = np.ones(len(d), dtype=int)
-    mask[np.where(np.logical_or((d >= LOOKAHEAD_DISTANCE), (pathPointsLaser[:,0] > 0)))] = 0
-    viable = ma.masked_array(d, mask=mask)
-    waypointIndex = viable.argmin()
-    waypoint = pathPointsLaser[waypointIndex]
+        carPositionLaser = toLaser(carPositionMap) #this should be the zero vector
+        #apply positional extrapolation based on localization delay
+        carPositionLaser += self.extrapolatePosition() 
 
-    goalX = waypoint[0]
-    goalY = waypoint[1]
+        pathPointsLaser = toLaser(np.asarray(self.path_points))
 
-    invCurvature = (2*np.abs(goalY)) / d[waypointIndex]**2
-    angle = np.arcsin(invCurvature * WHEELBASE_CM)
-#    print("CURRENT POS")
-    #    print("\t X: " + str(x))
-    #    print("\t Y: " + str(y))
-    #    print("\t facing: " + str(yaw))
+        distances = np.linalg.norm(pathPointsLaser - carPositionLaser, axis=1)
+        mask = np.ones(len(distances), dtype=int)
+        mask[np.where(np.logical_and(
+            (distances >= self.LOOKAHEAD_DISTANCE), 
+            (pathPointsLaser[:,0] > (self.FOV_MULT * pathPointsLaser[:,1]))
+        )] = 0
+        viable = ma.masked_array(distances, mask=mask)
+        waypointIndex = viable.argmin()
+        waypoint = pathPointsLaser[waypointIndex]
 
-    #print("WAYPOINT")
-    print("\t X: " + str(goalX))
-    print("\t Y: " + str(goalY))
-    print("\t at angle: " + str(angle))
-    #path_points[index] is the point closest to the vehicle
+        goalX = waypoint[0]
+        goalY = waypoint[1]
+    
+        self.turnRadius = distances[waypointIndex]**2 / (2 * np.abs(goalY))
+        self.curvature = 1 / self.turnRadius
+        
+        self.steeringAngle = np.arcsin(self.WHEELBASE/self.turnRadius) * np.sign(goalY)
+        self.steeringAngle = np.clip(self.steeringAngle, -self.MAX_TURN_ANGLE, self.MAX_TURN_ANGLE)
+        
+        msg = drive_param()
+        msg.velocity = self.decideVelocity()
+        msg.angle = self.steeringAngle
+        self.drivePub.publish(msg)
 
-    # 3. Transform the goal point to vehicle coordinates.
-    # THIS IS DONE IN LOOP
+    def extrapolatePosition(self):
+        theta = self.currentSpeed * self.LOCALIZATION_DELAY * self.curvature
+        return np.array([
+            self.turnRadius * np.cos(theta),
+            self.turnRadius * np.sin(theta)
+        ]) * np.sign(self.steeringAngle)
 
-    # 4. Calculate the curvature = 1/r = 2x/l^2
-    # The curvature is transformed into steering wheel angle by the vehicle on board controller.
-    # Hint: You may need to flip to negative because for the VESC a right steering angle has a negative value.
+    def decideVelocity(self):
+        return self.VELOCITY
+        #linear speed reduction on corners
+        #return self.MIN_VELOCITY + self.VELOCITY_ANGLE_RELATION * (self.MAX_TURN_ANGLE - self.steeringAngle) 
 
+        #basic polynomial reduction
+        #return self.MIN_VELOCITY + self.VELOCITY_ANGLE_RELATION_SQR * (self.MAX_TURN_ANGLE - self.steeringAngle)
 
-    angle = np.clip(angle, -0.4189, 0.4189) # 0.4189 radians = 24 degrees because car can only turn 24 degrees max
+        #force-based polynomial reduction
 
-    msg = drive_param()
-    msg.velocity = VELOCITY
-    msg.angle = -1*angle
-    pub.publish(msg)
+    def publishMarker(self):
+        pass
+        #marker = Marker()
+        #marker.header.frame_id = "/map"
+        #marker.type = marker.SPHERE
+        #marker.action = marker.ADD
+        #marker.scale.x = 0.3
+        #marker.scale.y = 0.3
+        #marker.scale.z = 0.3
+        #marker.color.a = 0.0
+        #marker.color.r = 1.0
+        #marker.color.g = 0.0
+        #marker.color.b = 0.0
+        #marker.pose.orientation.w = 1.0
+        #marker.pose.position.x = goalX + toLaserFrame[0]
+        #marker.pose.position.y = goalY + toLaserFrame[1]
+        #marker.pose.position.z = 0
+        #self.waypointPub.publish(marker)
 
-if __name__ == '__main__':
-    rospy.init_node('pure_pursuit')
-    rospy.Subscriber('/pf/viz/inferred_pose', PoseStamped, callback, queue_size=1)
-    tfListener = tf.TransformListener()
-    rospy.spin()
+if __name__ == "__main__":
+    try:
+        iface = Interface()
+        iface.start()
+    except rospy.ROSInterruptException:
+        rospy.logerr("ROS INTERRUPT EXCEPTION")
