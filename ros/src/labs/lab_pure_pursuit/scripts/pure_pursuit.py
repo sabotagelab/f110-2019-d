@@ -19,35 +19,64 @@ class Interface:
 
     def __init__(self):
         rospy.init_node('pure_pursuit')
-
-        self.LOOKAHEAD_DISTANCE = .75 #meters
-        self.VELOCITY = 1.0 #m/s
+	
         self.FOV = 120 #where to look for new points
         self.FOV_MULT = 1 / np.tan( np.deg2rad(self.FOV) / 2 ) # constant for calculating critical x-value
+        self.LOOKAHEAD_DISTANCE = 1.5 #m
         self.WHEELBASE = .326 #meters
         self.MAX_TURN_ANGLE = .4189
+        self.TURN_ANGLE_NORMALIZATION = 1/self.MAX_TURN_ANGLE
 
         self.LOCALIZATION_DELAY = .1 #lag from localization in seconds
 
-        #EXPERIMENTAL VELOCITY SETTINGS
-        self.MAX_VELOCITY = 2.0 #m/s
-        self.MIN_VELOCITY = 1.0 #m/s
+        self.MAX_VELOCITY = 3.0 #m/s
+        self.MIN_VELOCITY = 2.0 #m/s
+        self.VELOCITY_NORMALIZATION = 1/(self.MAX_VELOCITY - self.MIN_VELOCITY)
         self.VELOCITY_ANGLE_RELATION = (self.MAX_VELOCITY-self.MIN_VELOCITY) / self.MAX_TURN_ANGLE
         self.VELOCITY_ANGLE_RELATION_SQR = (self.MAX_VELOCITY**2-self.MIN_VELOCITY**2) / self.MAX_TURN_ANGLE
+
+        self.ANGLE_LOOK_RATIO = .5
+        self.MAX_LOOKAHEAD = 3.0 #m
+        self.MIN_LOOKAHEAD = 1.0 #m 
+        self.SPD_LOOKAHEAD_EXPONENT = 2
+        self.LOOK_SPEED_RELATION = (self.MAX_LOOKAHEAD - self.MIN_LOOKAHEAD) / (self.MAX_VELOCITY - self.MIN_VELOCITY)
+        self.getLookAtSpeed = lambda : (self.MAX_LOOKAHEAD - self.MIN_LOOKAHEAD) * \
+            ((np.clip(self.currentSpeed - self.MIN_VELOCITY,0,self.MAX_VELOCITY)
+             * self.VELOCITY_NORMALIZATION)**self.SPD_LOOKAHEAD_EXPONENT) \
+            * (( 1 - self.ANGLE_LOOK_RATIO) + self.ANGLE_LOOK_RATIO * \
+            (1 - np.abs(self.steeringAngle * self.TURN_ANGLE_NORMALIZATION))) \
+            + self.MIN_LOOKAHEAD
+
+        self.MIN_META_LOOKAHEAD = 2.0 #m
+        self.MAX_META_LOOKAHEAD = 5.0 #m
+
+        self.ANGLE_TURN_EXPONENT = 2 # how quickly speed changes with low angles (lower numbers are less agressive)
+        self.getSpeedAtAngle = lambda : (self.MAX_VELOCITY - self.MIN_VELOCITY) * \
+            ( 1 - np.abs(self.steeringAngle * self.TURN_ANGLE_NORMALIZATION)**self.ANGLE_TURN_EXPONENT ) \
+            + self.MIN_VELOCITY
 
         self.waypointFilepath = '/home/nvidia/rcws/logs/test-path.csv'
 
         self.poseSub = rospy.Subscriber('/pf/viz/inferred_pose', PoseStamped, self.localizeCallback, queue_size=1)
-        self.odomSub = rospy.Subscriber('/vesc/odom', Odometry, self.storeOdometry, queue_size=5)
+        self.odomSub = rospy.Subscriber('/vesc/odom', Odometry, self.storeOdometry, queue_size=1)
         self.drivePub = rospy.Publisher('drive_parameters', drive_param, queue_size=1)
-        self.waypointPub = rospy.Publisher('/waypoint_marker', Marker)
+        self.waypointPub = rospy.Publisher('/waypoint_marker', Marker, queue_size=10)
         self.tfListener = tf.TransformListener()
+
+        self.path_points = None
+        self.loadWaypoints()
+
+        self.curvature = 1
+        self.steeringAngle = 0
+        self.turnRadius = 1
+        self.currentVelocity = np.array([0,0])
+        self.currentSpeed = 0
 
     def start(self):
         rospy.spin()
     
     def storeOdometry(self, odom):
-        self.currentVelocity = (odom.pose.twist.twist.linear.x, odom.pose.twist.twist.linear.y)
+        self.currentVelocity = np.array([odom.twist.twist.linear.x, odom.twist.twist.linear.y])
         self.currentSpeed = np.linalg.norm(self.currentVelocity)
 
     def loadWaypoints(self):
@@ -55,12 +84,11 @@ class Interface:
         dirname = os.path.dirname(__file__)
         filename = os.path.join(dirname, '~/rcws/logs/test-path.csv')
         with open(self.waypointFilepath) as f:
-            path_points = [tuple(line) for line in csv.reader(f)]
+            self.path_points = [tuple(line) for line in csv.reader(f)]
 
         # Turn path_points into a list of floats to eliminate the need for casts in the code below.
-        self.path_points = [[float(point[0]), float(point[1])] for point in path_points]
-        print(path_points)
-        # Publisher for 'drive_parameters' (speed and steering angle)
+        self.path_points = [[float(point[0]), float(point[1])] for point in self.path_points]
+        print(self.path_points)
 
     def localizeCallback(self, data):
         mapToLaser = self.tfListener.lookupTransform('/map','/laser',rospy.Time(0))
@@ -83,35 +111,54 @@ class Interface:
 
         toLaser = lambda coords : (coords - toLaserTransMatrix).dot(toLaserRotMatrix)
 
+        #finding goal waypoint and other metadata
         carPositionMap = np.array([
             data.pose.position.x,
             data.pose.position.y
         ])
 
         carPositionLaser = toLaser(carPositionMap) #this should be the zero vector
+
         #apply positional extrapolation based on localization delay
-        carPositionLaser += self.extrapolatePosition() 
+        extrap = self.extrapolatePosition() 
 
         pathPointsLaser = toLaser(np.asarray(self.path_points))
 
         distances = np.linalg.norm(pathPointsLaser - carPositionLaser, axis=1)
         mask = np.ones(len(distances), dtype=int)
-        mask[np.where(np.logical_and(
+        viable = np.where(np.logical_and(
             (distances >= self.LOOKAHEAD_DISTANCE), 
             (pathPointsLaser[:,0] > (self.FOV_MULT * pathPointsLaser[:,1]))
-        )] = 0
-        viable = ma.masked_array(distances, mask=mask)
-        waypointIndex = viable.argmin()
+        ))
+        mask[viable] = 0
+
+        viableMask = ma.masked_array(distances, mask=mask)
+        waypointIndex = viableMask.argmin()
         waypoint = pathPointsLaser[waypointIndex]
 
         goalX = waypoint[0]
         goalY = waypoint[1]
     
-        self.turnRadius = distances[waypointIndex]**2 / (2 * np.abs(goalY))
+        #calculate goal angle and velocity
+        self.findCurveRadius = lambda distance, offset : distance**2/(2 * np.abs(offset))
+        self.turnRadius = self.findCurveRadius(distances[waypointIndex], goalY)
         self.curvature = 1 / self.turnRadius
         
         self.steeringAngle = np.arcsin(self.WHEELBASE/self.turnRadius) * np.sign(goalY)
         self.steeringAngle = np.clip(self.steeringAngle, -self.MAX_TURN_ANGLE, self.MAX_TURN_ANGLE)
+
+        print("===========================")
+        print("X: " + str(goalX))
+        print("Y: " + str(goalY))
+        print("R: " + str(self.turnRadius))
+        print("angle: " + str(self.steeringAngle))
+        print("ex: " + str(extrap[0]))
+        print("ey: " + str(extrap[1]))
+        print("LOOK: " + str(self.decideLookahead()))
+        print("SPD: " + str(self.decideVelocity()))
+        print("SPD-EST: " + str(self.currentSpeed))
+        print("===========================")
+
         
         msg = drive_param()
         msg.velocity = self.decideVelocity()
@@ -120,20 +167,25 @@ class Interface:
 
     def extrapolatePosition(self):
         theta = self.currentSpeed * self.LOCALIZATION_DELAY * self.curvature
+        print(theta)
         return np.array([
             self.turnRadius * np.cos(theta),
             self.turnRadius * np.sin(theta)
         ]) * np.sign(self.steeringAngle)
 
     def decideVelocity(self):
-        return self.VELOCITY
+        #return self.VELOCITY
         #linear speed reduction on corners
         #return self.MIN_VELOCITY + self.VELOCITY_ANGLE_RELATION * (self.MAX_TURN_ANGLE - self.steeringAngle) 
 
         #basic polynomial reduction
         #return self.MIN_VELOCITY + self.VELOCITY_ANGLE_RELATION_SQR * (self.MAX_TURN_ANGLE - self.steeringAngle)
 
-        #force-based polynomial reduction
+        return self.getSpeedAtAngle()
+
+    def decideLookahead(self):
+        #return np.clip(self.currentSpeed - self.MIN_VELOCITY, 0, self.MAX_VELOCITY) * self.LOOK_SPEED_RELATION + self.MIN_LOOKAHEAD
+        return self.getLookAtSpeed()
 
     def publishMarker(self):
         pass
