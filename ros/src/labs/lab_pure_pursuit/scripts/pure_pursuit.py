@@ -40,12 +40,15 @@ class Interface:
         self.MIN_LOOKAHEAD = 1.0 #m 
         self.SPD_LOOKAHEAD_EXPONENT = 2
         self.LOOK_SPEED_RELATION = (self.MAX_LOOKAHEAD - self.MIN_LOOKAHEAD) / (self.MAX_VELOCITY - self.MIN_VELOCITY)
-        self.getLookAtSpeed = lambda : (self.MAX_LOOKAHEAD - self.MIN_LOOKAHEAD) * \
-            ((np.clip(self.currentSpeed - self.MIN_VELOCITY,0,self.MAX_VELOCITY)
-             * self.VELOCITY_NORMALIZATION)**self.SPD_LOOKAHEAD_EXPONENT) \
-            * (( 1 - self.ANGLE_LOOK_RATIO) + self.ANGLE_LOOK_RATIO * \
-            (1 - np.abs(self.steeringAngle * self.TURN_ANGLE_NORMALIZATION))) \
-            + self.MIN_LOOKAHEAD
+        self.lookAngleMultiplier = lambda : (self.ANGLE_LOOK_RATIO) * \
+            (1 - np.abs(self.steeringAngle * self.TURN_ANGLE_NORMALIZATION)**self.ANGLE_TURN_EXPONENT)
+        
+        self.lookSpeedMultiplier = lambda : (1-self.ANGLE_LOOK_RATIO) * \
+            ((np.clip((self.currentSpeed-self.MIN_VELOCITY)*self.VELOCITY_NORMALIZATION,0,1) \
+            )**self.SPD_LOOKAHEAD_EXPONENT)
+
+        self.getLook = lambda : ((self.MAX_LOOKAHEAD - self.MIN_LOOKAHEAD) * \
+            (self.lookSpeedMultiplier() + self.lookAngleMultiplier()) + self.MIN_LOOKAHEAD)
 
         self.MIN_META_LOOKAHEAD = 2.0 #m
         self.MAX_META_LOOKAHEAD = 5.0 #m
@@ -121,6 +124,9 @@ class Interface:
 
         #apply positional extrapolation based on localization delay
         extrap = self.extrapolatePosition() 
+        self.LOOKAHEAD_DISTANCE = self.decideLookahead()
+        print(self.lookSpeedMultiplier())
+        print(self.lookAngleMultiplier())
 
         pathPointsLaser = toLaser(np.asarray(self.path_points))
 
@@ -185,7 +191,7 @@ class Interface:
 
     def decideLookahead(self):
         #return np.clip(self.currentSpeed - self.MIN_VELOCITY, 0, self.MAX_VELOCITY) * self.LOOK_SPEED_RELATION + self.MIN_LOOKAHEAD
-        return self.getLookAtSpeed()
+        return self.getLook()
 
     def publishMarker(self):
         pass
