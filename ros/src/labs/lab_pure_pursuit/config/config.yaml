@@ -1,0 +1,43 @@
+pure_pursuit:
+  FOV: 120
+  LOOKAHEAD_DISTANCE: 1.5
+  WHEELBASE: 0.326
+  MAX_TURN_ANGLE: 0.4189
+  LOCALIZATION_DELAY: 0.1
+  MAX_VELOCITY: 3.0
+  MIN_VELOCITY: 2.0
+  ANGLE_LOOK_RATIO: 0.5
+  MAX_LOOKAHEAD: 3.0
+  MIN_LOOKAHEAD: 1.0
+  SPD_LOOKAHEAD_EXPONENT: 2
+  MIN_META_LOOKAHEAD: 2.0
+  MAX_META_LOOKAHEAD: 5.0
+  ANGLE_TURN_EXPONENT: 2
+
+
+        self.FOV = 120 #where to look for new points
+
+        self.LOOKAHEAD_DISTANCE = 1.5 #m
+
+        self.WHEELBASE = .326 #meters
+
+        self.MAX_TURN_ANGLE = .4189
+
+        self.LOCALIZATION_DELAY = .1 #lag from localization in seconds
+
+        self.MAX_VELOCITY = 3.0 #m/s
+
+        self.MIN_VELOCITY = 2.0 #m/s
+
+        self.ANGLE_LOOK_RATIO = .5
+
+        self.MAX_LOOKAHEAD = 3.0 #m
+
+        self.MIN_LOOKAHEAD = 1.0 #m
+
+        self.SPD_LOOKAHEAD_EXPONENT = 2
+        self.MIN_META_LOOKAHEAD = 2.0 #m
+
+        self.MAX_META_LOOKAHEAD = 5.0 #m
+
+        self.ANGLE_TURN_EXPONENT = 2 # how quickly speed changes with low angles (lower numbers are less agressive)
