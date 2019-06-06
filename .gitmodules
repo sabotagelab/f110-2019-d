@@ -1,0 +1,3 @@
+[submodule "PointManager"]
+	path = PointManager
+	url = https://github.com/NathanJewell/PointManager.git
